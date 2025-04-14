@@ -3,6 +3,18 @@
   "version": "0.0.44",
   "description": "Simple MD utils",
   "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./find-code-blocks": "./src/find-code-blocks.js",
+    "./find-headings": "./src/find-headings.js",
+    "./find-frontmatter": "./src/find-frontmatter.js",
+    "./find-images": "./src/find-images.js",
+    "./find-links": "./src/find-links.js",
+    "./find-unmatched-html-tags": "./src/find-unmatched-html-tags.js",
+    "./find-footnotes": "./src/find-footnotes.js",
+    "./find-date": "./src/find-date.js",
+    "./find-html-tags": "./src/find-html-tags.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/DavidWells/components/packages/util-md"

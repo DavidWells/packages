@@ -2,10 +2,11 @@ const path = require('path')
 const fs = require('fs')
 const { test } = require('uvu')
 const assert = require('uvu/assert')
-const { findCodeBlocks } = require('./find-code-blocks')
+const { findCodeBlocks, collectSingleLineCodeBlocks } = require('./find-code-blocks')
 const { parseFrontmatter } = require('./frontmatter')
 
 const FILE_WITH_CODE = path.join(__dirname, '../fixtures/file-with-code.md')
+const FILE_WITH_CODE_INLINE = path.join(__dirname, '../fixtures/file-with-code-inline.md')
 const FILE_WITH_CODE_TILDE = path.join(__dirname, '../fixtures/file-with-code-tilde.md')
 const FILE_WITH_HTML_CODE = path.join(__dirname, '../fixtures/file-with-html-code.md')
 const FILE_WITH_BLOCKQUOTE_CODE = path.join(__dirname, '../fixtures/file-with-quote-code.md')
@@ -32,6 +33,12 @@ test('findCodeBlocks ```', async () => {
     block: "````md\n```javascript\nconsole.log('test')\n```\n````",
     code: "```javascript\nconsole.log('test')\n```"
   })
+})
+
+test('collectSingleLineCodeBlocks', async () => {
+  const code = findCodeBlocks(read(FILE_WITH_CODE_INLINE))
+  console.log('code', code)
+  assert.equal(code.blocks.length, 7)
 })
 
 test('findCodeBlocks html', async () => {

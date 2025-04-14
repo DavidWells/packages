@@ -2,6 +2,8 @@ const { parse } = require('oparser')
 const { getLineCount, getLineNumberFromMatch } = require('./utils')
 const dedentString = require('./utils/dedent')
 
+// https://expressive-code.com/key-features/word-wrap/
+
 /* old patterns
 // https://regex101.com/r/nIlW1U/6
 const CODE_BLOCK_RE = /^([A-Za-z \t]*)```([A-Za-z]*)?([A-Za-z_ \t="'{}]*)?\n([\s\S]*?)```([A-Za-z \t]*)*$/gm
@@ -35,6 +37,7 @@ function findCodeBlocks(block, opts = {}) {
   let matches
   let errors = []
   let blocks = []
+  let ranges = []
 
   const PATTERN = (includePreTags) ? CODE_BLOCK_HTML_RE : CODE_BLOCK_RE
 
@@ -100,6 +103,11 @@ function findCodeBlocks(block, opts = {}) {
       codeBlock.index = matches.index
     }
 
+    ranges.push({
+      start: matches.index,
+      end: matches.index + match.length
+    })
+
     if (props) {
       codeBlock.propsRaw = props
       codeBlock.props = parse(props)
@@ -156,10 +164,73 @@ function findCodeBlocks(block, opts = {}) {
     }
   }
 
+  const inlineBlocks = collectSingleLineCodeBlocks(block)
+  blocks = blocks
+    .concat(inlineBlocks)
+    .sort((a, b) => a.index - b.index)
+    // Remove any blocks that are inside another block from ranges
+    .filter((block, _index, self) => !ranges.some(r => r.start < block.index && r.end > block.index))
+
+  // console.log('blocks.length', blocks.length)
   return {
     errors,
     blocks
   }
+}
+
+// https://github.com/shikijs/shiki/issues/660
+// https://regex101.com/r/a7hgWC/1
+const PATTERN =
+  /`(js|javascript|ts|typescript|html|css|python)\s+((?:[^`\n]|(?<=\\)`)+)`|`([^`\n]+)\{:(js|javascript|ts|typescript|html|css|python)\}`/g
+// {:language}
+
+function createInlineCodeRegex(languages = ['js', 'javascript', 'ts', 'typescript', 'html', 'css', 'python']) {
+  const langPattern = languages.join('|')
+
+  return new RegExp([
+    // Pattern 1: Single backtick with language prefix - `js code`
+    `\`(${langPattern})\\s+((?:[^\`\\n]|(?<=\\\\)\`)+)\``,
+    // Pattern 2: Single backtick with language suffix - `code`{:javascript}
+    `\`([^\`\\n]+)\\{:(${langPattern})\\}\``
+  ].join('|'), 'g')
+}
+
+const INLINE_CODE_PATTERN = createInlineCodeRegex()
+
+function collectSingleLineCodeBlocks(text) {
+  let match
+  const results = []
+
+  while ((match = INLINE_CODE_PATTERN.exec(text)) !== null) {
+    if (match.index === INLINE_CODE_PATTERN.lastIndex) {
+      INLINE_CODE_PATTERN.lastIndex++ // avoid infinite loops with zero-width matches
+    }
+
+    const lineNumber = getLineNumberFromMatch(text, match)
+    // Check which pattern matched
+    if (match[1] && match[2]) {
+      // Pattern 1: prefix match
+      results.push({
+        line: lineNumber,
+        index: match.index,
+        syntax: match[1],
+        code: match[2],
+        block: match[0],
+        inline: true,
+      })
+    } else if (match[3] && match[4]) {
+      // Pattern 2: suffix match
+      results.push({
+        line: lineNumber,
+        index: match.index,
+        syntax: match[4],
+        code: match[3],
+        block: match[0],
+        inline: true,
+      })
+    }
+  }
+  return results // .concat(findCodeBlocks(text).blocks)
 }
 
 function removeCode(text = '') {
@@ -172,6 +243,7 @@ module.exports = {
   findCodeBlocks,
   removeCode,
   CODE_BLOCK_RE,
-  CODE_BLOCK_HTML_RE
+  CODE_BLOCK_HTML_RE,
+  collectSingleLineCodeBlocks,
   // REMOVE_CODE_BLOCK_RE
 }
