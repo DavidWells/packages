@@ -7,7 +7,7 @@ const { normalizeLevels } = require('./normalize')
  * @property {boolean} [collapse = false] - Collapse toc in <details> pane
  * @property {string}  [collapseText] - Text in expand pane
  * @property {string}  [excludeText] - Text to exclude from toc
- * @property {boolean} [firsth1 = true] - Exclude first heading from toc
+ * @property {boolean} [stripFirstH1 = true] - Exclude first heading from toc
  * @property {boolean} [sub = false] - Mark as sub section table of contents
  * @property {number}  [maxDepth = 4] - Max depth of headings to add to toc.
  */

@@ -110,7 +110,7 @@ function treeBuild(contents, opts = {}) {
   }
 
   if (options.normalizeLevels) {
-    return normalizeLevels(result)
+    return normalizeLevels(result, 1)
   }
 
   return result

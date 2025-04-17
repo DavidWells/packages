@@ -6,7 +6,7 @@ function removeTocItems(array, matcher) {
     }
     if (tocItem.hasOwnProperty('text')) {
       const shouldFilter = matchItem(tocItem, matcher, false)
-      console.log('shouldFilter', shouldFilter, tocItem.text)
+      // console.log('shouldFilter', shouldFilter, tocItem.text)
       if (shouldFilter) {
         // console.log('filtering', tocItem.text)
         return acc
@@ -23,7 +23,7 @@ function matchItem(tocItem, matcher, invertFn = false) {
     return tocItem.match === matcher || tocItem.text === matcher
   } else if (typeof matcher === 'function') {
     const result = matcher(tocItem)
-    console.log('result', result, tocItem.text)
+    // console.log('result', result, tocItem.text)
     if (typeof result === 'undefined' || result === null) {
       return false
     }
@@ -33,7 +33,7 @@ function matchItem(tocItem, matcher, invertFn = false) {
   } else if (Array.isArray(matcher)) {
     return matcher.some((f) => {
       const check = matchItem(tocItem, f)
-      console.log(`check ${tocItem.text}`, check, f)
+      //console.log(`check ${tocItem.text}`, check, f)
       return check
     })
   } else if (typeof matcher === 'object' && matcher.match) {

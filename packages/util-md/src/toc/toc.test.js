@@ -1209,6 +1209,42 @@ test('Get Sub-Section via options.subSection', () => {
 })
 
 
+test('normalizeLevels', () => {
+  const md = `# Heading 1
+Cool
+
+<!-- doc-gen TOC maxDepth="4" -->
+  - [one](#one)
+    - [xxxx](#xxxx)
+    - [yyy](#yyy)
+      - [four](#four)
+<!-- end-doc-gen -->
+
+## one
+
+### xxxx
+
+### yyy
+
+#### four
+
+## one two
+  `
+  const toc = generateToc(md, {
+    stripFirstH1: true,
+    normalizeLevels: true,
+  })
+  // deepLog('x',toc.text)
+  assert.equal(toc.text,
+  `- [one](#one)
+  - [xxxx](#xxxx)
+  - [yyy](#yyy)
+    - [four](#four)
+- [one two](#one-two)`)
+})
+
+
+
 function normalizedTocObject(str, opts = {}) {
   const toc = treeBuild(str, opts)
   return toc.map(removeIndexFromObj)

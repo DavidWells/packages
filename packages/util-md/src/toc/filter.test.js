@@ -187,7 +187,7 @@ test('removeTocItems - array of matchers', () => {
     /Heading 2.*paragraph/,              // regex match
     (item) => {
       const slugMatch = item.slug === 'html-heading-2a'
-      console.log('>>>>', slugMatch)
+      console.log('>>>> FILTER > ', slugMatch)
       return slugMatch
     }  // function match by slug
   ]
