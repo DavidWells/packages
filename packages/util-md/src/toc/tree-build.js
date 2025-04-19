@@ -2,45 +2,44 @@ const { smartSlugger } = require('../utils/slugger')
 const { findHeadings } = require('../find-headings')
 const { normalizeLevels } = require('./normalize')
 const { removeTocItems, matchItem } = require('./filter')
-
-const matchTextEscaped = '.*?'
-// /^#{1}\s+(.*)/
-const OPENING_MD_HEADING = new RegExp(`^#{1,6}\\s*\\[?${matchTextEscaped}\\]?(?:.*)?`)
-// /^<(h[1-6])[^>]*>.*?<\/\1>/
-const OPENING_HTML_HEADING = /^<(h[1-6])[^>]*>.*?<\/\1>/
-// new RegExp(`^<h1\\b[^>]*>[\\s]*?(${matchTextEscaped})[\\s]*?<\\/h1>`, 'gim')
-// /^(.*)\n={3,}/
-const OPENING_SETEXT_HEADING = new RegExp(`^(${matchTextEscaped})\n={3,}`)
+const { removeLeadingHeading } = require('../find-headings')
 
 const defaultTocOptions = {
   includeHtmlHeaders: true,
 }
 
+/**
+ * Builds a table of contents tree from markdown content
+ * @param {string} contents - The markdown content to parse
+ * @param {Object} [opts={}] - Options for building the table of contents
+ * @param {boolean} [opts.includeHtmlHeaders=true] - Whether to include HTML headers
+ * @param {boolean} [opts.trimLeadingHeading] - Whether to trim the leading heading
+ * @param {boolean} [opts.excludeIndex] - Whether to exclude index from the result
+ * @param {boolean} [opts.normalizeLevels] - Whether to normalize heading levels
+ * @param {string|Object} [opts.subSection] - Subsection to extract
+ * @param {Array} [opts.headings] - Pre-parsed headings to use instead of finding them
+ * @param {Function|Object} [opts.removeTocItems] - Function or object to filter out TOC items
+ * @returns {Array<import('./index').TocItem>} Array of TOC items with the following structure:
+ *   - level: number - The heading level
+ *   - text: string - The heading text
+ *   - slug: string - The slugified heading text
+ *   - match: string - The original heading match
+ *   - index: number - The index of the heading in the content (if not excluded)
+ *   - children: Array<Object> - Nested headings (if any)
+ */
 function treeBuild(contents, opts = {}) {
   const options = Object.assign({}, defaultTocOptions, opts)
   let content = (contents || '').trim()
 
-  let openingHeading = ''
-  if (opts.trimLeadingHeading) {
-    const openingHeadingMD = content.match(OPENING_MD_HEADING)
-    const openingHeadingHTML = content.match(OPENING_HTML_HEADING)
-    const openingHeadingSetext = content.match(OPENING_SETEXT_HEADING)
-    // Remove first heading
-    if (openingHeadingMD) {
-      content = content.replace(OPENING_MD_HEADING, '').trim()
-      openingHeading = openingHeadingMD[0]
-    } else if (openingHeadingHTML) {
-      content = content.replace(OPENING_HTML_HEADING, '').trim()
-      openingHeading = openingHeadingHTML[0]
-    } else if (openingHeadingSetext) {
-      content = content.replace(OPENING_SETEXT_HEADING, '').trim()
-      openingHeading = openingHeadingSetext[0]
-    }
+  if (content && opts.trimLeadingHeading) {
+    content = removeLeadingHeading(content, opts.trimLeadingHeading)
   }
   /*
-  console.log('openingHeading', openingHeading)
-  // console.log(content)
-  process.exit(1)
+  if (openingHeading) {
+    console.log('openingHeading', openingHeading)
+    console.log('content', content)
+    process.exit(1)
+  }
   /** */
 
   const headings = options.headings || findHeadings(content, options)
@@ -116,12 +115,18 @@ function treeBuild(contents, opts = {}) {
   return result
 }
 
+/**
+ * Finds matching subsections in the TOC tree
+ * @param {Array<import('./index').TocItem>} items - Array of TOC items
+ * @param {string|Object} matcher - Matcher to find subsections
+ * @returns {Array<import('./index').TocItem>|null} Array of matching subsections or null if none found
+ */
 function findMatchingSubSections(items, matcher) {
   let matches = []
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i]
-    if (matchItem(item, matcher)) {
+    if (matcher && matchItem(item, matcher)) {
       // Found matching section
       matches.push(item)
     }
@@ -136,6 +141,12 @@ function findMatchingSubSections(items, matcher) {
   return matches.length ? matches : null
 }
 
+/**
+ * Finds the location in the navigation tree to add a new item
+ * @param {Array<Object>} navigation - The navigation tree
+ * @param {number} depth - The depth to find
+ * @returns {Array<Object>} The location to add the new item
+ */
 function findLocation(navigation, depth) {
   if (depth <= 0) {
     return navigation
@@ -150,6 +161,11 @@ function findLocation(navigation, depth) {
   return findLocation(loc.children, depth - 1)
 }
 
+/**
+ * Flattens the TOC tree
+ * @param {Array<import('./index').TocItem>} arr - The TOC tree to flatten
+ * @returns {Array<import('./index').TocItem>} The flattened TOC tree
+ */
 function flattenToc(arr) {
   const result = []
 

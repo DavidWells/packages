@@ -3,7 +3,7 @@ const fs = require('fs')
 const util = require('util')
 const { test } = require('uvu')
 const assert = require('uvu/assert')
-const { findHeadings } = require('./find-headings')
+const { findHeadings, findLeadingHeading, removeLeadingHeading } = require('./find-headings')
 const { treeBuild } = require('./toc')
 const FILE_WITH_HEADERS = path.join(__dirname, '../fixtures/file-with-headings.md')
 
@@ -837,5 +837,84 @@ test('Heading with footnote', () => {
   ])
 })
 
+test('findLeadingHeading - markdown style', () => {
+  const text = '# My Heading\nSome content'
+  const result = findLeadingHeading(text)
+  assert.equal(result.match, '# My Heading')
+  assert.equal(result.level, 1)
+})
+
+test('findLeadingHeading - HTML style', () => {
+  const text = '<h1>My Heading</h1>\nSome content'
+  const result = findLeadingHeading(text)
+  assert.equal(result.match, '<h1>My Heading</h1>')
+  assert.equal(result.level, 1)
+})
+
+test('findLeadingHeading - setext style h1', () => {
+  const text = 'My Heading\n=====\nSome content'
+  const result = findLeadingHeading(text)
+  assert.equal(result.match, 'My Heading\n=====')
+  assert.equal(result.level, 1)
+})
+
+test('findLeadingHeading - setext style h2', () => {
+  const text = `My Heading
+-----
+
+Some content
+`
+  const result = findLeadingHeading(text)
+  assert.equal(result.match, 'My Heading\n-----')
+  assert.equal(result.level, 2)
+})
+
+test('findLeadingHeading - no heading', () => {
+  const text = 'Some content without heading'
+  const result = findLeadingHeading(text)
+  assert.equal(result.match, '')
+})
+
+test('findLeadingHeading - empty string', () => {
+  const text = ''
+  const result = findLeadingHeading(text)
+  assert.equal(result.match, '')
+})
+
+test('removeLeadingHeading - markdown style', () => {
+  const text = '# My Heading\nSome content'
+  const result = removeLeadingHeading(text)
+  assert.equal(result, 'Some content')
+})
+
+test('removeLeadingHeading - HTML style', () => {
+  const text = '<h1>My Heading</h1>\nSome content'
+  const result = removeLeadingHeading(text)
+  assert.equal(result, 'Some content')
+})
+
+test('removeLeadingHeading - setext style h1', () => {
+  const text = 'My Heading\n=====\nSome content'
+  const result = removeLeadingHeading(text)
+  assert.equal(result, 'Some content')
+})
+
+test('removeLeadingHeading - setext style h2', () => {
+  const text = 'My Heading\n-----\nSome content'
+  const result = removeLeadingHeading(text)
+  assert.equal(result, 'Some content')
+})
+
+test('removeLeadingHeading - no heading', () => {
+  const text = 'Some content without heading'
+  const result = removeLeadingHeading(text)
+  assert.equal(result, 'Some content without heading')
+})
+
+test('removeLeadingHeading - empty string', () => {
+  const text = ''
+  const result = removeLeadingHeading(text)
+  assert.equal(result, '')
+})
 
 test.run()

@@ -5,7 +5,7 @@ const assert = require('uvu/assert')
 const {
   generateToc,
   treeBuild,
-  treeProcess,
+  treeStringify,
   normalizeLevels,
 } = require('./')
 const { deepLog, clearIndexValues } = require('../_test-utils')
@@ -20,7 +20,8 @@ test('Generates Toc largeTable and skip all h1s', () => {
   deepLog(toc)
 
   assert.equal(toc.text,
-`- [Stars by date](#stars-by-date)
+`
+- [Stars by date](#stars-by-date)
 - [About this repo](#about-this-repo)
   - [Features](#features)
   - [Usage](#usage)
@@ -313,7 +314,7 @@ test('Generates Toc multipleLayersWithMultipleChildren', () => {
     },
   ])
 
-  const tocText = treeProcess(toc)
+  const tocText = treeStringify(toc)
   // console.log('tocText', tocText)
 
   assert.equal(tocText.text,
@@ -716,7 +717,7 @@ even more stuff
       ],
     },
   ])
-  const tocText = treeProcess(toc)
+  const tocText = treeStringify(toc)
   // console.log('tocText html', tocText)
 
   assert.equal(tocText.text,
@@ -1007,7 +1008,7 @@ test('Deeply nested md toc', () => {
   deepLog('og toc', toc)
   // process.exit(1)
 
-  const tocText = treeProcess(toc, {
+  const tocText = treeStringify(toc, {
     stripFirstH1: false,
     maxDepth: 3,
   })
@@ -1118,7 +1119,7 @@ test('Get Sub-Section manually', () => {
 
 
   const normalized = normalizeLevels([toc[0].children[0]], 1)
-  const subSectionToc = treeProcess(normalized)
+  const subSectionToc = treeStringify(normalized)
   /*
   console.log('normalized', normalized)
   deepLog(subSectionToc.text)
@@ -1172,7 +1173,7 @@ test('Get Sub-Section via options.subSection', () => {
   })
   deepLog(subSectionTree)
 
-  const subSectionToc = treeProcess(subSectionTree)
+  const subSectionToc = treeStringify(subSectionTree)
   deepLog(subSectionToc)
 
   assert.equal(subSectionToc.text, `

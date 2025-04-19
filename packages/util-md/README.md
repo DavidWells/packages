@@ -1,4 +1,6 @@
-# MD utils
+# Markdown utils
+
+Markdown utilities
 
 ## Install
 

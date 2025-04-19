@@ -114,10 +114,63 @@ function findHeadings(text, userOpts = {}) {
   return headings
 }
 
+// /^#{1}\s+(.*)/
+const OPENING_MD_HEADING = /^(#{1,6})\s*\[?.*?\]?(?:.*)?/
+// /^<(h[1-6])[^>]*>.*?<\/\1>/
+const OPENING_HTML_HEADING = /^<(h([1-6]))[^>]*>.*?<\/\1>/i
+// new RegExp(`^<h1\\b[^>]*>[\\s]*?(${matchTextEscaped})[\\s]*?<\\/h1>`, 'gim')
+// /^(.*)\n={3,}/
+const OPENING_SETEXT_HEADING = /^(.*?)\n(-{3,}|={3,})/
+
+function findLeadingHeading(text = '') {
+  let leadingHeading = ''
+  let type = ''
+  let level = 0
+
+  if (text.startsWith('#')) {
+    const openingHeadingMD = text.match(OPENING_MD_HEADING)
+    if (openingHeadingMD) {
+      leadingHeading = openingHeadingMD[0]
+      type = 'md'
+      level = openingHeadingMD[1].length
+    }
+  } else if (text.startsWith('<h') || text.startsWith('<H')) {
+    /* mightHaveHtmlHeading */
+    const openingHeadingHTML = text.match(OPENING_HTML_HEADING)
+    if (openingHeadingHTML) {
+      leadingHeading = openingHeadingHTML[0]
+      type = 'html'
+      level = Number(openingHeadingHTML[2])
+    }
+  } else if (text.indexOf('\n=') !== -1 || text.indexOf('\n-') !== -1) {
+    /* mightHaveSetextHeading */
+    const openingHeadingSetext = text.match(OPENING_SETEXT_HEADING)
+    if (openingHeadingSetext) {
+      leadingHeading = openingHeadingSetext[0]
+      type = 'setext'
+      level = openingHeadingSetext[2].startsWith('=') ? 1 : 2
+    }
+  }
+  return {
+    match: leadingHeading,
+    type,
+    level,
+  }
+}
+
+function removeLeadingHeading(text, level) {
+  const leadingHeading = findLeadingHeading(text)
+  if (!leadingHeading.match) return text
+  if (typeof level === 'number' && leadingHeading.level !== level) return text
+  return text.replace(leadingHeading.match, '').trim()
+}
+
 function shouldNotFilter(heading, predicate) {
   return (typeof predicate === 'function') ? predicate(heading) : true
 }
 
 module.exports = {
   findHeadings,
+  findLeadingHeading,
+  removeLeadingHeading,
 }

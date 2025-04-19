@@ -5,7 +5,7 @@ function removeTocItems(array, matcher) {
       tocItem.children = removeTocItems(tocItem.children, matcher)
     }
     if (tocItem.hasOwnProperty('text')) {
-      const shouldFilter = matchItem(tocItem, matcher, false)
+      const shouldFilter = matchItem(tocItem, matcher)
       // console.log('shouldFilter', shouldFilter, tocItem.text)
       if (shouldFilter) {
         // console.log('filtering', tocItem.text)
@@ -18,7 +18,36 @@ function removeTocItems(array, matcher) {
   }, [])
 }
 
-function matchItem(tocItem, matcher, invertFn = false) {
+/**
+ * @typedef {Object} TocItem
+ * @property {string} text - The text content of the ToC item
+ * @property {string} [match] - Optional match string for the ToC item
+ * @property {number} [index] - Optional index position of the ToC item
+ * @property {string} [slug] - Optional slug for the ToC item
+ * @property {number} [level] - Optional level of the ToC item
+ */
+
+/**
+ * @typedef {function(TocItem): boolean} MatcherFunction
+ */
+
+/**
+ * @typedef {string|MatcherFunction|RegExp|MatcherObject} ValidMatcher
+ */
+
+/**
+ * @typedef {Object} MatcherObject
+ * @property {ValidMatcher} match - The criteria to match against
+ * @property {number} [index] - Optional index position for matching
+ */
+
+/**
+ * Determines if a ToC item matches the specified matcher criteria
+ * @param {TocItem} tocItem - The ToC item to check
+ * @param {ValidMatcher|Array<ValidMatcher>} matcher - The criteria to match against
+ * @returns {boolean} - True if the item matches the criteria, false otherwise
+ */
+function matchItem(tocItem, matcher) {
   if (typeof matcher === 'string') {
     return tocItem.match === matcher || tocItem.text === matcher
   } else if (typeof matcher === 'function') {

@@ -11,6 +11,8 @@ test('matchItem - matches with regex', () => {
   const item = { text: 'Features List', match: '### Features List' }
   assert.ok(matchItem(item, /Features/))
   assert.ok(matchItem(item, /^Features/))
+  assert.ok(matchItem(item, /\bFeatures List\b/))
+  assert.ok(matchItem(item, /List$/))
   assert.not.ok(matchItem(item, /^List/))
 })
 
@@ -37,9 +39,11 @@ test('removeTocItems - basic filtering', () => {
   ]
 
   const filtered = removeTocItems(tree, 'Features')
-  // console.log('filtered', filtered)
+  deepLog('filtered', filtered)
   assert.equal(filtered.length, 1)
   assert.equal(filtered[0].text, 'Root')
+  assert.equal(filtered[0].children.length, 1)
+  assert.equal(filtered[0].children[0].text, 'Usage')
 })
 
 test('removeTocItems - deep filtering', () => {

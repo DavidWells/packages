@@ -1,5 +1,5 @@
 const { treeBuild } = require('./tree-build')
-const { treeProcess } = require('./tree-process')
+const { treeStringify } = require('./tree-stringify')
 const { normalizeLevels } = require('./normalize')
 
 /**
@@ -12,23 +12,39 @@ const { normalizeLevels } = require('./normalize')
  * @property {number}  [maxDepth = 4] - Max depth of headings to add to toc.
  */
 
+/**
+ * @typedef {Object} TocItem
+ * @property {number} level - The level of the ToC item
+ * @property {string} text - The text content of the ToC item
+ * @property {string} [slug] - Optional slug for the ToC item
+ * @property {string} [match] - Optional match string for the ToC item
+ * @property {number} [index] - Optional index position of the ToC item
+ * @property {Array<TocItem>} [children] - Optional children of the ToC item
+ */
+
+/**
+ * @typedef {Object} TocResult
+ * @property {Array<TocItem>} tocItems - The table of contents items.
+ * @property {string} text - The markdown list items text.
+ * @property {Array<TocItem>} tree - The table of contents tree.
+ */
 
 /**
  * Generate a table of contents from a markdown string.
  * @param {string} contents - The markdown string to generate a table of contents from.
  * @param {TocOptions} [opts] - The options for the table of contents.
- * @returns {Object} - An object containing the table of contents tree and the markdown text.
+ * @returns {TocResult} - An object containing the table of contents tree and the markdown text.
  */
 function generateToc(contents, opts = {}) {
   const tree = treeBuild(contents, opts)
-  const result = treeProcess(tree, opts)
+  const result = treeStringify(tree, opts)
   result.tree = tree
   return result
 }
 
 module.exports = {
   normalizeLevels,
-  treeProcess,
+  treeStringify,
   treeBuild,
   generateToc,
 }
