@@ -169,8 +169,87 @@ function shouldNotFilter(heading, predicate) {
   return (typeof predicate === 'function') ? predicate(heading) : true
 }
 
+/**
+ * Finds the closest parent heading for a given location in the text
+ * @param {Array|string} text - Array of headings or markdown text
+ * @param {number|string} indexOrMatchText - The character position in the text
+ * @param {Object} options - Options for findHeadings if text is a string
+ * @returns {Object|null} - The closest parent heading or null if none found
+ */
+function findClosestParentHeading(text, indexOrMatchText, options = {}) {
+  const opts = options
+  opts.excludeIndex = false
+  let loc = indexOrMatchText
+  if (typeof text === 'string' && typeof indexOrMatchText === 'string') {
+    loc = text.indexOf(indexOrMatchText)
+  }
+  // Early return for invalid location
+  if (typeof loc !== 'number' || loc < 0) return
+
+  const headings = (typeof text === 'object') ? text : findHeadings(text, opts)
+  if (!headings.length) return
+
+  // Binary search to find heading at or just before location
+  let start = 0
+  let end = headings.length - 1
+  let closestIndex = -1
+
+  while (start <= end) {
+    const mid = Math.floor((start + end) / 2)
+    const heading = headings[mid]
+    if (heading.index <= loc) {
+      closestIndex = mid
+      start = mid + 1
+    } else {
+      end = mid - 1
+    }
+  }
+
+  // If no heading found before location
+  if (closestIndex === -1) {
+    return
+  }
+
+  const heading = headings[closestIndex]
+  // Check if location is inside this heading
+  if (loc < heading.index + heading.match.length) {
+    // Location is inside a heading, find parent one level up
+    const parentLevel = heading.level - 1
+    // If it's already a top-level heading, there's no parent
+    if (parentLevel < 1) {
+      return
+    }
+    // Find closest heading with level = parentLevel that comes before this heading
+    // Start from closestIndex and go backwards for efficiency
+    for (let i = closestIndex - 1; i >= 0; i--) {
+      if (headings[i].level === parentLevel) {
+        return headings[i]
+      }
+    }
+    return
+  }
+  // Location is after this heading, return it as the parent
+  return heading
+}
+
+if (require.main === module) {
+  const text = `
+# Heading 1
+
+Some text here.
+
+## Heading 2
+
+Some more text here.
+`
+  const location = 'Some more text here.'
+  const result = findClosestParentHeading(text, location)
+  console.log(result)
+}
+
 module.exports = {
   findHeadings,
   findLeadingHeading,
   removeLeadingHeading,
+  findClosestParentHeading,
 }

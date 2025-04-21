@@ -3,7 +3,7 @@ const fs = require('fs')
 const util = require('util')
 const { test } = require('uvu')
 const assert = require('uvu/assert')
-const { findHeadings, findLeadingHeading, removeLeadingHeading } = require('./find-headings')
+const { findHeadings, findLeadingHeading, removeLeadingHeading, findClosestParentHeading } = require('./find-headings')
 const { treeBuild } = require('./toc')
 const FILE_WITH_HEADERS = path.join(__dirname, '../fixtures/file-with-headings.md')
 
@@ -823,7 +823,7 @@ const headingWithFootnotes = `
 
 test('Heading with footnote', () => {
   const headerToc = treeBuild(headingWithFootnotes)
-  //*
+  /*
   deepLog('headerToc', headerToc)
   /** */
   assert.equal(headerToc, [
@@ -915,6 +915,101 @@ test('removeLeadingHeading - empty string', () => {
   const text = ''
   const result = removeLeadingHeading(text)
   assert.equal(result, '')
+})
+
+test('findClosestParentHeading - should find the closest parent heading for a given location', async () => {
+  const contents = read(FILE_WITH_HEADERS)
+  // console.log('contents', contents)
+  // Test case 1: Location after a level 3 heading, should find the level 2 parent
+  const location1 = 1000 // After "Nested Heading 3 with paragraph"
+  const parent1 = findClosestParentHeading(contents, location1)
+  assert.equal(parent1.text, 'Heading 2 with paragraph 2')
+  assert.equal(parent1.level, 2)
+})
+
+test('findClosestParentHeading - should find the closest parent heading for a given location 2', async () => {
+  const contents = read(FILE_WITH_HEADERS)
+  // console.log('contents', contents)
+  // Test case 2: Location after a level 2 heading, should find the level 1 parent
+  const location2 = 600 // After "Heading 2 with paragraph 2"
+  const parent2 = findClosestParentHeading(contents, location2)
+  // console.log('parent2', parent2)
+  assert.equal(parent2.text, 'Heading 1 with paragraph')
+  assert.equal(parent2.level, 1, 'parent2.level')
+
+  // Test case 3: Location at the beginning of the document, should return null
+  const location3 = 0
+  const parent3 = findClosestParentHeading(contents, location3)
+  assert.equal(parent3, undefined)
+
+  // Test case 4: Location after a level 1 heading, should return null (no parent)
+  const location4 = 100 // After "Heading 1 with paragraph"
+  const parent4 = findClosestParentHeading(contents, location4)
+  assert.equal(parent4, undefined)
+
+  // Test case 5: Location in the middle of a paragraph, should find the closest heading
+  const location5 = 300 // In the middle of a paragraph
+  const parent5 = findClosestParentHeading(contents, location5)
+  assert.equal(parent5.text, 'Heading 2 with paragraph 1 😃')
+  assert.equal(parent5.level, 2, 'parent5.level')
+})
+
+test('findClosestParentHeading - should work with HTML headings', async () => {
+  const contents = `
+# Markdown Heading 1
+
+Some text here.
+
+<h2>HTML Heading 2</h2>
+
+More text here.
+
+<h3>HTML Heading 3</h3>
+
+Even more text here.
+`
+
+  // Test case 1: Location after HTML Heading 3, should find HTML Heading 2 as parent
+  const location1 = contents.indexOf('Even more text here')
+  const parent1 = findClosestParentHeading(contents, location1, { includeHtmlHeaders: true })
+  assert.equal(parent1.text, 'HTML Heading 3')
+  assert.equal(parent1.level, 3)
+
+  // Test case 2: Location after HTML Heading 2, should find Markdown Heading 1 as parent
+  const location2 = contents.indexOf('More text here')
+  const parent2 = findClosestParentHeading(contents, location2, { includeHtmlHeaders: true })
+  assert.equal(parent2.text, 'HTML Heading 2')
+  assert.equal(parent2.level, 2)
+})
+
+test('findClosestParentHeading - should work with setext headings', async () => {
+  const contents = `
+# Markdown Heading 1
+
+Some text here.
+
+Setext Heading 2
+===============
+
+More text here.
+
+Setext Heading 3
+---------------
+
+Even more text here.
+`
+
+  // Test case 1: Location after Setext Heading 3, should find Setext Heading 2 as parent
+  const location1 = contents.indexOf('Even more text here')
+  const parent1 = findClosestParentHeading(contents, location1)
+  assert.equal(parent1.text, 'Setext Heading 3')
+  assert.equal(parent1.level, 2)
+
+  // Test case 2: Location after Setext Heading 2, should find Markdown Heading 1 as parent
+  const location2 = contents.indexOf('More text here')
+  const parent2 = findClosestParentHeading(contents, location2)
+  assert.equal(parent2.text, 'Setext Heading 2')
+  assert.equal(parent2.level, 1)
 })
 
 test.run()
