@@ -1160,9 +1160,9 @@ test('Get Sub-Section manually', () => {
 })
 
 
-test('Get Sub-Section via options.subSection', () => {
-  const subSectionTree = normalizedTocObject(mdWithSubSections, {
-    subSection: {
+test('Get section via options.section', () => {
+  const sectionTree = normalizedTocObject(mdWithSubSections, {
+    section: {
       match: /Heading 2/,
       index: 37
     },
@@ -1171,18 +1171,19 @@ test('Get Sub-Section via options.subSection', () => {
     // subSection: 'Heading 2',
     // removeTocItems: /Table of Contents/i,
   })
-  deepLog(subSectionTree)
+  deepLog(sectionTree)
 
-  const subSectionToc = treeStringify(subSectionTree)
-  deepLog(subSectionToc)
+  const sectionToc = treeStringify(sectionTree)
+  deepLog(sectionToc)
 
-  assert.equal(subSectionToc.text, `
+  assert.equal(sectionToc.text, `
 - [Heading 2](#heading-2)
   - [Heading 3](#heading-3)
   - [Heading 3 2](#heading-3-2)
 `.trim(), 'subSectionToc.text')
 
-  assert.equal(subSectionToc.tocItems, [
+
+  assert.equal(sectionToc.tocItems, [
     {
       level: 1,
       text: 'Heading 2',
@@ -1209,6 +1210,46 @@ test('Get Sub-Section via options.subSection', () => {
   ])
 })
 
+
+test('Get sub-section via options.subSection', () => {
+  const subSectionTree = normalizedTocObject(mdWithSubSections, {
+    subSection: {
+      match: /Heading 2/,
+      index: 37
+    },
+    // subSection: /Heading 2/,
+    // subSection: 'Heading 2',
+    // subSection: 'Heading 2',
+    // removeTocItems: /Table of Contents/i,
+  })
+  deepLog(subSectionTree)
+
+  const subSectionToc = treeStringify(subSectionTree)
+  deepLog(subSectionToc)
+
+  assert.equal(subSectionToc.text, `
+- [Heading 3](#heading-3)
+- [Heading 3 2](#heading-3-2)
+`.trim(), 'x.text')
+
+
+  assert.equal(subSectionToc.tocItems, [
+    {
+      level: 1,
+      text: 'Heading 3',
+      slug: 'heading-3',
+      match: '### Heading 3',
+      originalLevel: 3
+    },
+    {
+      level: 1,
+      text: 'Heading 3 2',
+      slug: 'heading-3-2',
+      match: '### Heading 3 2',
+      originalLevel: 3
+    }
+  ])
+})
 
 test('normalizeLevels', () => {
   const md = `# Heading 1

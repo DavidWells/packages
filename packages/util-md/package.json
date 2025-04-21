@@ -1,6 +1,6 @@
 {
   "name": "@davidwells/md-utils",
-  "version": "0.0.49",
+  "version": "0.0.50",
   "description": "Simple MD utils",
   "main": "src/index.js",
   "author": "David Wells",

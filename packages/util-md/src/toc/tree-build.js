@@ -86,14 +86,15 @@ function treeBuild(contents, opts = {}) {
   // console.log('result', result)
   // process.exit(1)
 
-  if (options.subSection) {
+  const findSubSection = options.subSection || options.section
+  if (findSubSection) {
     // Find matching subsection recursively
-    const subSections = findMatchingSubSections(result, options.subSection)
+    const subSections = findMatchingSubSections(result, findSubSection)
 
     if (!subSections) {
       const msg = 'Error: No sub-section found.'
       console.log(msg)
-      console.log(' via options.subSection', options.subSection)
+      console.log(' via options.subSection', findSubSection)
       throw new Error(msg + ' Unable to generate ToC for sub-section')
     }
 
@@ -105,7 +106,8 @@ function treeBuild(contents, opts = {}) {
       throw new Error(msg + ' Provide index of heading or rename conflicting headings')
     }
 
-    return normalizeLevels([subSections[0]], 1)
+    const subsection = (options.section) ? [subSections[0]] : subSections[0].children || []
+    return normalizeLevels(subsection, 1)
   }
 
   if (options.normalizeLevels) {

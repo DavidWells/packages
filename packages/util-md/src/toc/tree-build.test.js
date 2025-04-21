@@ -616,4 +616,94 @@ test('Generates Toc multipleLayers', () => {
 
 })
 
+test('treeBuild with subSection option', () => {
+  const contents = read(FILE_WITH_HEADERS)
+
+  // Test with string matcher
+  const tocWithStringMatcher = treeBuild(contents, {
+    excludeIndex: true,
+    subSection: 'Heading 2 with paragraph 2'
+  })
+
+  assert.equal(tocWithStringMatcher, [
+    {
+      level: 1,
+      text: 'Nested Heading 3 with paragraph',
+      slug: 'nested-heading-3-with-paragraph',
+      match: '### Nested Heading 3 with paragraph',
+      originalLevel: 3
+    },
+    {
+      level: 1,
+      text: 'Nested Heading 3 with paragraph 2',
+      slug: 'nested-heading-3-with-paragraph-2',
+      match: '### Nested Heading 3 with paragraph 2',
+      originalLevel: 3
+    }
+  ], 'tocWithStringMatcher')
+
+  // Test with regex matcher
+  const tocWithRegexMatcher = treeBuild(contents, {
+    excludeIndex: true,
+    subSection: /Group 2 Heading 1/
+  })
+
+  assert.equal(tocWithRegexMatcher, [
+    {
+      level: 1,
+      text: 'Group 2 Heading 2 with paragraph 1',
+      slug: 'group-2-heading-2-with-paragraph-1',
+      match: '## Group 2 Heading 2 with paragraph 1',
+      originalLevel: 2
+    },
+    {
+      level: 1,
+      text: 'Group 2 Heading 2 with paragraph 2',
+      slug: 'group-2-heading-2-with-paragraph-2',
+      match: '## Group 2 Heading 2 with paragraph 2',
+      originalLevel: 2
+    }
+  ], 'tocWithRegexMatcher')
+
+  // Test with function matcher
+  const tocWithFunctionMatcher = treeBuild(contents, {
+    excludeIndex: true,
+    subSection: (item) => item.text.includes('HTML Heading 1')
+  })
+
+  assert.equal(tocWithFunctionMatcher, [
+    {
+      level: 1,
+      text: 'HTML Heading 2',
+      slug: 'html-heading-2',
+      match: '<h2>HTML Heading 2</h2>',
+      originalLevel: 2
+    },
+    {
+      level: 1,
+      text: 'HTML Heading 2',
+      slug: 'html-heading-2-1',
+      match: '<h2>HTML Heading 2</h2>',
+      originalLevel: 2
+    }
+  ], 'tocWithFunctionMatcher')
+
+  // Test with object matcher
+  const tocWithObjectMatcher = treeBuild(contents, {
+    excludeIndex: true,
+    subSection: { match: 'This is a first level heading' }
+  })
+
+  assert.equal(tocWithObjectMatcher, [
+    {
+      level: 1,
+      text: 'This is a second level heading',
+      slug: 'this-is-a-second-level-heading',
+      match: '\n\nThis is a second level heading\n------------------------------',
+      originalLevel: 2
+    }
+  ], 'tocWithObjectMatcher')
+})
+
+
 test.run()
