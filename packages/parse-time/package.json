@@ -1,0 +1,29 @@
+{
+  "name": "@davidwells/parse-time",
+  "version": "1.0.0",
+  "description": "Parse messy time strings into JavaScript Date objects",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "author": "David Wells",
+  "license": "MIT",
+  "scripts": {
+    "test": "uvu . '.test.([mc]js|[jt]sx?)$'",
+    "build": "tsc --emitDeclarationOnly",
+    "release:patch": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish"
+  },
+  "keywords": [
+    "parse",
+    "time",
+    "date",
+    "messy",
+    "time parsing",
+    "date parsing"
+  ],
+  "devDependencies": {
+    "strftime": "^0.10.3",
+    "typescript": "^5.8.3",
+    "uvu": "^0.5.6"
+  }
+}
