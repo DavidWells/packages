@@ -83,14 +83,12 @@ function treeBuild(contents, opts = {}) {
   }
 
   const result = flattenToc((options.removeTocItems) ? removeTocItems(navigation, options.removeTocItems) : navigation)
-  // console.log('result', result)
-  // process.exit(1)
+
 
   const findSubSection = options.subSection || options.section
   if (findSubSection) {
     // Find matching subsection recursively
-    const subSections = findMatchingSubSections(result, findSubSection)
-
+    let subSections = findMatchingSubSections(result, findSubSection)
     if (!subSections) {
       const msg = 'Error: No sub-section found.'
       console.log(msg)
@@ -99,11 +97,17 @@ function treeBuild(contents, opts = {}) {
     }
 
     if (subSections && subSections.length > 1) {
-      const msg = 'Error: Multiple subSections found.'
-      console.log(msg)
-      console.log(subSections.map((s) => `- "${s.match}" at index: ${s.index}`).join('\n'))
-      console.log(' via options.subSection', options.subSection)
-      throw new Error(msg + ' Provide index of heading or rename conflicting headings')
+      // Try and find the closes section based on index
+      const closestSection = findClosestSection(subSections, findSubSection)
+
+      if (!closestSection) {
+        const msg = 'Error: Multiple subSections found.'
+        console.log(msg)
+        console.log(subSections.map((s) => `- "${s.match}" at index: ${s.index}`).join('\n'))
+        console.log(' via options.subSection', options.subSection)
+        throw new Error(msg + ' Provide index of heading or rename conflicting headings')
+      }
+      subSections = [closestSection]
     }
 
     const subsection = (options.section) ? [subSections[0]] : subSections[0].children || []
@@ -115,6 +119,20 @@ function treeBuild(contents, opts = {}) {
   }
 
   return result
+}
+
+
+function findClosestSection(subSections, targetSection) {
+  let closest = subSections[0]
+  let minDiff = Math.abs(subSections[0].index - targetSection.index)
+  for (let i = 1; i < subSections.length; i++) {
+    const diff = Math.abs(subSections[i].index - targetSection.index)
+    if (diff < minDiff) {
+      minDiff = diff
+      closest = subSections[i]
+    }
+  }
+  return closest
 }
 
 /**
@@ -150,9 +168,7 @@ function findMatchingSubSections(items, matcher) {
  * @returns {Array<Object>} The location to add the new item
  */
 function findLocation(navigation, depth) {
-  if (depth <= 0) {
-    return navigation
-  }
+  if (depth <= 0) return navigation
   let loc = navigation[navigation.length - 1]
   if (!loc) {
     loc = { children: [] }
@@ -185,7 +201,6 @@ function flattenToc(arr) {
       result.push(item)
     }
   }
-
   return result
 }
 

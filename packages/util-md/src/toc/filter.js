@@ -68,8 +68,9 @@ function matchItem(tocItem, matcher) {
   } else if (typeof matcher === 'object' && matcher.match) {
     const check = matchItem(tocItem, matcher.match)
     if (typeof matcher.index === 'number') {
-      // Check if index within range of 10 characters
-      return check && (tocItem.index >= (matcher.index - 5) && tocItem.index <= (matcher.index + 5))
+      return check
+      /* Check if index within range of 10 characters */
+      // && (tocItem.index >= (matcher.index - 5) && tocItem.index <= (matcher.index + 5))
     }
     return check
   }
