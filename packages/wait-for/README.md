@@ -295,16 +295,16 @@ waitFor({
 
 Here are some practical use cases for wait-for, with detailed examples in the [examples/use-cases](examples/use-cases) directory:
 
-- [Database Connection](examples/use-cases/database-connection.js) - Waiting for database to be ready
-- [File System](examples/use-cases/file-system.js) - Waiting for file system operations
-- [API Health Check](examples/use-cases/api-health-check.js) - Checking API health status
-- [Test Automation](examples/use-cases/test-automation.js) - Waiting for UI elements in tests
-- [CI/CD Pipeline](examples/use-cases/cicd-pipeline.js) - Monitoring deployment status
-- [Resource Cleanup](examples/use-cases/resource-cleanup.js) - Waiting for resources to be released
-- [Event-Driven Systems](examples/use-cases/event-driven.js) - Waiting for event processing
-- [Microservices](examples/use-cases/microservices.js) - Coordinating between microservices
-- [Configuration](examples/use-cases/configuration.js) - Waiting for configuration loading
-- [Queue Processing](examples/use-cases/queue-processing.js) - Waiting for queue to be empty
+- [Database Connection](https://github.com/DavidWells/packages/blob/master/packages/wait-for/examples/use-cases/database-connection.js) - Waiting for database to be ready
+- [File System](https://github.com/DavidWells/packages/blob/master/packages/wait-for/examples/use-cases/file-system.js) - Waiting for file system operations
+- [API Health Check](https://github.com/DavidWells/packages/blob/master/packages/wait-for/examples/use-cases/api-health-check.js) - Checking API health status
+- [Test Automation](https://github.com/DavidWells/packages/blob/master/packages/wait-for/examples/use-cases/test-automation.js) - Waiting for UI elements in tests
+- [CI/CD Pipeline](https://github.com/DavidWells/packages/blob/master/packages/wait-for/examples/use-cases/cicd-pipeline.js) - Monitoring deployment status
+- [Resource Cleanup](https://github.com/DavidWells/packages/blob/master/packages/wait-for/examples/use-cases/resource-cleanup.js) - Waiting for resources to be released
+- [Event-Driven Systems](https://github.com/DavidWells/packages/blob/master/packages/wait-for/examples/use-cases/event-driven.js) - Waiting for event processing
+- [Microservices](https://github.com/DavidWells/packages/blob/master/packages/wait-for/examples/use-cases/microservices.js) - Coordinating between microservices
+- [Configuration](https://github.com/DavidWells/packages/blob/master/packages/wait-for/examples/use-cases/configuration.js) - Waiting for configuration loading
+- [Queue Processing](https://github.com/DavidWells/packages/blob/master/packages/wait-for/examples/use-cases/queue-processing.js) - Waiting for queue to be empty
 
 <!-- doc-gen {USE_CASES} -->
 ### Api Health Check
