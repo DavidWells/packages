@@ -3,6 +3,10 @@
   "version": "1.0.14",
   "main": "index.js",
   "types": "index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DavidWells/packages/tree/master/packages/wait-for"
+  },
   "scripts": {
     "docs": "node docs.js",
     "test": "npm run test-main && npm run test-use-cases",
