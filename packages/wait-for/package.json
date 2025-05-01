@@ -1,0 +1,26 @@
+{
+  "name": "@davidwells/wait-for",
+  "version": "1.0.14",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "docs": "node docs.js",
+    "test": "npm run test-main && npm run test-use-cases",
+    "test-main": "node index.test.js",
+    "test-use-cases": "uvu examples \".*\\.test.js$\"",
+    "release:patch": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish",
+    "build": "tsc --emitDeclarationOnly --declaration --outDir . && npm run docs",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "markdown-magic": "^3.6.1",
+    "typescript": "^5.3.3",
+    "uvu": "^0.5.6"
+  }
+}
