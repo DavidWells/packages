@@ -1,6 +1,6 @@
 # wait-for
 
-A flexible and powerful polling utility that allows you to wait for a condition to be met with configurable retry logic, cancellation, timeouts, and callbacks.
+`@davidwells/wait-for` is a flexible and powerful polling utility that allows you to wait for a condition to be met with configurable retry logic, cancellation, timeouts, and callbacks.
 
 <!-- doc-gen TOC collapse="true" -->
 <details>
@@ -338,12 +338,12 @@ class MockAPIClient {
 
 async function run() {
   console.log('Starting API health check...')
-  
+
   const api = new MockAPIClient()
-  
+
   // Start API in background
   api.start().catch(console.error)
-  
+
   try {
     // Wait for API to be healthy
     const result = await waitFor({
@@ -367,7 +367,7 @@ async function run() {
         console.error('API health check failed:', error.message)
       }
     })
-    
+
     console.log('API health check result:', result)
     return result
   } catch (error) {
@@ -405,13 +405,13 @@ class MockDeploymentService {
 
 async function run() {
   console.log('Starting CI/CD pipeline example...')
-  
+
   const deploymentService = new MockDeploymentService()
   const deploymentId = 'deploy-123'
-  
+
   // Start deployment in background
   deploymentService.startDeployment(deploymentId).catch(console.error)
-  
+
   try {
     // Wait for deployment to complete
     const result = await waitFor({
@@ -433,7 +433,7 @@ async function run() {
         console.error('Deployment failed:', error.message)
       }
     })
-    
+
     console.log('Deployment result:', result.value)
     return result
   } catch (error) {
@@ -481,12 +481,12 @@ class MockConfigService {
 
 async function run() {
   console.log('Starting configuration loading example...')
-  
+
   const configService = new MockConfigService()
-  
+
   // Start config loading in background
   configService.loadConfig().catch(console.error)
-  
+
   try {
     // Wait for config to be ready
     const result = await waitFor({
@@ -502,7 +502,7 @@ async function run() {
         console.error('Configuration loading failed:', error.message)
       }
     })
-    
+
     console.log('Configuration result:', result)
     console.log('Loaded config:', configService.getConfig())
     return result
@@ -543,12 +543,12 @@ class MockDatabase {
 
 async function run() {
   console.log('Starting database connection test...')
-  
+
   const db = new MockDatabase()
-  
+
   // Start connection in background
   db.connect().catch(console.error)
-  
+
   try {
     // Wait for database to be ready
     const result = await waitFor({
@@ -572,7 +572,7 @@ async function run() {
         console.error('Failed to connect to database:', error.message)
       }
     })
-    
+
     console.log('Database is ready:', result)
     return result
   } catch (error) {
@@ -611,13 +611,13 @@ class MockEventProcessor {
 
 async function run() {
   console.log('Starting event-driven systems example...')
-  
+
   const eventProcessor = new MockEventProcessor()
   const eventId = 'event-123'
-  
+
   // Start event processing in background
   eventProcessor.processEvent(eventId).catch(console.error)
-  
+
   try {
     // Wait for event to be processed
     const result = await waitFor({
@@ -637,7 +637,7 @@ async function run() {
         console.error('Event processing failed:', error.message)
       }
     })
-    
+
     console.log('Event processing result:', result)
     return result
   } catch (error) {
@@ -674,20 +674,20 @@ class FileCreator {
 
 async function run() {
   console.log('Starting file system operations test...')
-  
+
   const tempDir = path.join(__dirname, 'temp')
   const filePath = path.join(tempDir, 'test.txt')
-  
+
   // Create temp directory if it doesn't exist
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir)
   }
-  
+
   const creator = new FileCreator(filePath)
-  
+
   // Start file creation in background
   creator.createFile().catch(console.error)
-  
+
   try {
     // Wait for file to be created
     const result = await waitFor({
@@ -704,9 +704,9 @@ async function run() {
         console.error('Failed to create file:', error.message)
       }
     })
-    
+
     console.log('File is ready:', result)
-    
+
     // Clean up
     fs.unlinkSync(filePath)
     fs.rmdirSync(tempDir)
@@ -754,13 +754,13 @@ class MockServiceRegistry {
 
 async function run() {
   console.log('Starting microservices coordination example...')
-  
+
   const serviceRegistry = new MockServiceRegistry()
   const serviceName = 'user-service'
-  
+
   // Start service registration in background
   serviceRegistry.registerService(serviceName).catch(console.error)
-  
+
   try {
     // Wait for service to be ready
     const result = await waitFor({
@@ -783,7 +783,7 @@ async function run() {
         console.error('Service health check failed:', error.message)
       }
     })
-    
+
     console.log('Service coordination result:', result)
     return result
   } catch (error) {
@@ -834,17 +834,17 @@ class MockQueueService {
 
 async function run() {
   console.log('Starting queue processing example...')
-  
+
   const queueService = new MockQueueService()
-  
+
   // Add some items to the queue
   await queueService.addToQueue('item-1')
   await queueService.addToQueue('item-2')
   await queueService.addToQueue('item-3')
-  
+
   // Start queue processing in background
   queueService.processQueue().catch(console.error)
-  
+
   try {
     // Wait for queue to be empty
     const result = await waitFor({
@@ -864,7 +864,7 @@ async function run() {
         console.error('Queue processing failed:', error.message)
       }
     })
-    
+
     console.log('Queue processing result:', result)
     return result
   } catch (error) {
@@ -914,21 +914,21 @@ class MockResourceManager {
 
 async function run() {
   console.log('Starting resource cleanup example...')
-  
+
   const resourceManager = new MockResourceManager()
   const controller = new AbortController()
-  
+
   // Allocate some resources
   const resource1 = resourceManager.allocateResource(1)
   const resource2 = resourceManager.allocateResource(2)
-  
+
   // Start cleanup in background
   setTimeout(() => {
     console.log('Starting cleanup...')
     resourceManager.releaseResource(resource1)
     resourceManager.releaseResource(resource2)
   }, 1000)
-  
+
   try {
     // Wait for resources to be released
     const result = await waitFor({
@@ -944,7 +944,7 @@ async function run() {
         console.log(`Heartbeat - Resource usage: ${resourceManager.getResourceUsage()}%`)
       }
     })
-    
+
     console.log('Resources cleaned up successfully:', result)
     return result
   } catch (error) {
@@ -990,12 +990,12 @@ class MockDOM {
 
 async function run() {
   console.log('Starting test automation example...')
-  
+
   const dom = new MockDOM()
-  
+
   // Simulate page load
   dom.loadPage().catch(console.error)
-  
+
   try {
     // Wait for loading spinner to disappear
     const result = await waitFor({
@@ -1012,7 +1012,7 @@ async function run() {
         console.error('Page load failed:', error.message)
       }
     })
-    
+
     console.log('Test automation result:', result)
     return result
   } catch (error) {
