@@ -34,9 +34,9 @@ const noOp = () => {}
  *   isAborted: boolean,
  *   isSettled: boolean,
  *   nextDelay?: number
- *    promise?: { 
+ *    promise?: {
  *     resolve: (value: WaitForResult | PromiseLike<WaitForResult>) => void,
- *     reject: (reason?: any) => void 
+ *     reject: (reason?: any) => void
  *   },
  * }} WaitForApi
  */
@@ -48,9 +48,9 @@ const noOp = () => {}
  *   timeoutId?: number,
  *   abortHandlerFn?: (this: AbortSignal, ev: Event) => any,
  *   nextDelay?: number
- *    promise?: { 
+ *    promise?: {
  *     resolve: (value: WaitForResult | PromiseLike<WaitForResult>) => void,
- *     reject: (reason?: any) => void 
+ *     reject: (reason?: any) => void
  *   },
  * }} _WFInternalState
  */
@@ -66,18 +66,18 @@ const noOp = () => {}
 
 /**
  * Waits for a condition to be met by repeatedly calling a predicate function.
- * 
+ *
  * @param {Function|WaitForOptions} fnOrOpts - Either a predicate function or options object
  * @param {WaitForOptions} [opts] - Options object if first parameter is a function
  * @returns {Promise<WaitForResult>} A promise that resolves when the condition is met or rejects on failure
- * 
+ *
  * @example
  * // Using a function as predicate
  * waitFor(async () => {
  *   const result = await someAsyncOperation();
  *   return result.success;
  * }, { timeout: 5000 });
- * 
+ *
  * @example
  * // Using an options object
  * waitFor({
@@ -106,12 +106,12 @@ function waitFor(fnOrOpts, opts = {}) {
   }
 
   const onHeartbeat = options.onHeartbeat || noOp
-  
+
   /** @type {number} */
   const retries = options._init ? options.retries + 1 : 0
   const config = {
     id: options.id,
-    attempt: options.attempt ?? 0,
+    attempt: options.attempt || 0,
     retries,
     maxRetries: options.maxRetries || Infinity,
     elapsed: options.elapsed || 0,
@@ -137,7 +137,7 @@ function waitFor(fnOrOpts, opts = {}) {
     nextDelay: options.nextDelay || 0,
     abortHandlerFn: options.abortHandlerFn,
     enhanceArgs: options.enhanceArgs || false,
-    retryOnError: options.retryOnError ?? (!options.onError ? false : true),
+    retryOnError: options.retryOnError != null ? options.retryOnError : (!options.onError ? false : true),
     promise: undefined,
     settle: (value) => {
       config.isSettled = value
@@ -163,7 +163,7 @@ function waitFor(fnOrOpts, opts = {}) {
   }
 
   /* Don't continue if aborted */
-  if (config.isAborted || abortController?.signal?.aborted) {
+  if (config.isAborted || (abortController && abortController.signal && abortController.signal.aborted)) {
     return exitFailure({ message: config.message, caller: 'abortCalled', state: config }, config)
   }
 
@@ -172,11 +172,11 @@ function waitFor(fnOrOpts, opts = {}) {
     const message = `Operation timed out. Max timeout ${timeout}ms already exceeded at ${elapsed}ms.`
     return exitFailure({ success: false, message, caller: 'timeoutNow', state: config }, config)
   }
-  
+
   /* Listener for external abort call */
   if (abortController && abortController.signal && !config.abortHandlerFn) {
     const handler = () => {
-      config.message = 'Operation aborted' + (abortController?.signal?.reason ? `: ${abortController.signal.reason}` : '')
+      config.message = 'Operation aborted' + (abortController && abortController.signal && abortController.signal.reason ? `: ${abortController.signal.reason}` : '')
       return exitFailure({ success: false, message: config.message, caller: 'abortController', state: config }, config)
     }
     abortController.signal.addEventListener('abort', handler, { once: true })
@@ -188,7 +188,7 @@ function waitFor(fnOrOpts, opts = {}) {
     if (typeof exponentialBackoff !== 'number') {
       throw new Error(`exponentialBackoff ${exponentialBackoff} must be a number. E.g. 1.5`)
     }
-    delay = delay * Math.pow(exponentialBackoff, retries)  
+    delay = delay * Math.pow(exponentialBackoff, retries)
   }
 
   // Apply max delay if provided
@@ -212,7 +212,7 @@ function waitFor(fnOrOpts, opts = {}) {
   if (minDelay) {
     delay = Math.max(delay, minDelay)
   }
-  
+
   // Calculate the next elapsed time
   const nextElapsed = elapsed + delay
   /* Check if we'll exceed timeout with this next delay with slight buffer of 10ms */
@@ -264,12 +264,12 @@ function waitFor(fnOrOpts, opts = {}) {
       }
 
       /* Don't continue if aborted */
-      if (config.isAborted || abortController?.signal?.aborted) {
-        return exitFailure({ 
-          success: false, 
-          message: config.message || abortController?.signal?.reason || 'NA', 
-          caller: 'predicateAborted', 
-          state: config 
+      if (config.isAborted || (abortController && abortController.signal && abortController.signal.aborted)) {
+        return exitFailure({
+          success: false,
+          message: config.message || (abortController && abortController.signal && abortController.signal.reason) || 'NA',
+          caller: 'predicateAborted',
+          state: config
         }, config)
       }
 
@@ -308,11 +308,11 @@ function waitFor(fnOrOpts, opts = {}) {
 
         /* If failOnError is true, reject the promise */
         if (config.retryOnError === false) {
-          return exitFailure({ 
-            success: false, 
+          return exitFailure({
+            success: false,
             message: error.message,
             caller: 'predicateError',
-            error, 
+            error,
             state: config
           }, config)
         }
@@ -339,7 +339,7 @@ function isWithinTimeout(elapsed, timeout, buffer = 10) {
 
 /**
  * Type guard to check if a value is a function
- * 
+ *
  * @param {*} fn - The value to check
  * @returns {fn is Function} True if the value is a function
  */
@@ -366,7 +366,7 @@ function uuid() {
 
 /**
  * Creates a function that can only be called once. Subsequent calls return the result of the first call.
- * 
+ *
  * @param {Function} fn - The function to wrap
  * @returns {Function} A function that can only be called once
  */
@@ -394,7 +394,7 @@ async function exitFailure(result, options, noReject) {
 
 /**
  * Handles the final resolution or rejection of the waitFor promise
- * 
+ *
  * @param {'resolve'|'reject'} type - The type of resolution
  * @param {WaitForResult} result - The result object
  * @param {_WFInternalState} options - The options object
@@ -407,7 +407,7 @@ function exit(type, result, options, noReject) {
     clearTimeout(options.timeoutId)
     options.timeoutId = undefined
   }
-  
+
   if (options.abortHandlerFn && options.abortController && options.abortController.signal) {
     options.abortController.signal.removeEventListener('abort', /** @type {(this: AbortSignal, ev: Event) => any} */ (options.abortHandlerFn))
     options.abortHandlerFn = undefined
@@ -417,9 +417,9 @@ function exit(type, result, options, noReject) {
   result.state = options
   // Call appropriate callbacks
   if (isSuccess) {
-    options.onSuccess?.(result)
+    if (options.onSuccess) options.onSuccess(result)
   } else {
-    options.onFailure?.(result)
+    if (options.onFailure) options.onFailure(result)
   }
   // Fire callback if provided
   if (options.callback) {
@@ -446,7 +446,7 @@ function exit(type, result, options, noReject) {
 
 /**
  * Appends additional arguments to a function call
- * 
+ *
  * @param {Function} fn - The function to wrap
  * @param {*} lastArg - The argument to append
  * @returns {Function} A function that appends the lastArg to the original function's arguments
