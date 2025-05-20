@@ -44,6 +44,14 @@ module.exports = async function extractResponsiveStyles({
 
   await createDir(tmpOutputDirectory)
 
+  // Empty the tmpOutputDirectory if it exists
+  try {
+    const files = await fs.readdir(tmpOutputDirectory)
+    await Promise.all(files.map(file => fs.unlink(path.join(tmpOutputDirectory, file))))
+  } catch (err) {
+    // Directory might not exist yet, which is fine
+  }
+
   let matchPatterns
   if (hasMatchPatterns) {
     matchPatterns = matchFiles
