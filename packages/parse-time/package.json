@@ -6,6 +6,10 @@
   "types": "index.d.ts",
   "author": "David Wells",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DavidWells/packages/tree/master/packages/parse-time"
+  },
   "scripts": {
     "test": "uvu . '.test.([mc]js|[jt]sx?)$'",
     "build": "tsc --emitDeclarationOnly",
