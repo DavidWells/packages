@@ -109,3 +109,8 @@ interface Item {
   index?: number;    // Optional index position of the item
 }
 ```
+
+## Alt libs
+
+- https://github.com/arlac77/matching-iterator/tree/master
+- Path matcher https://github.com/arlac77/multi-path-matcher
