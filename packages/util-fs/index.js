@@ -19,13 +19,43 @@ const deleteFile = (s) => fs.unlink(s).catch((e) => {
 
 const fileExists = (s) => fs.access(s, constants.F_OK).then(() => true).catch(() => false)
 
-// Recursive read dir
+/* Recursive read dir
 async function readDir(dir, recursive = true, allFiles = []) {
   const files = (await fs.readdir(dir)).map((file) => path.join(dir, file))
   if (!recursive) return files
   allFiles.push(...files)
   await Promise.all(files.map(async (file) => {
     return (await fs.stat(file)).isDirectory() && readDir(file, recursive, allFiles)
+  }))
+  return allFiles
+}
+*/
+
+// Recursive read dir
+const readDirOpts = {
+  recursive: true,
+  exclude: []
+}
+async function readDir(dir, opts = readDirOpts, allFiles = []) {
+  let files = (await fs.readdir(dir)).map((file) => path.join(dir, file))
+  const exclude = !Array.isArray(opts.exclude) ? [opts.exclude] : opts.exclude
+  if (exclude.length) {
+    files = files.filter((filePath) => {
+      return !exclude.some((matcher) => {
+        if (typeof matcher === 'string') {
+          return filePath.indexOf(matcher) !== -1
+        } else if (matcher instanceof RegExp) {
+          return filePath.match(matcher)
+        }
+      })
+    })
+  }
+  if (opts.recursive === false) {
+    return files
+  }
+  allFiles.push(...files)
+  await Promise.all(files.map(async (file) => {
+    return (await fs.stat(file)).isDirectory() && readDir(file, opts, allFiles)
   }))
   return allFiles
 }
