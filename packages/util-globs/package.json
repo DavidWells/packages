@@ -1,0 +1,41 @@
+{
+  "name": "@davidwells/glob-utils",
+  "version": "0.0.6",
+  "description": "File globber that understands regex",
+  "main": "src/index.js",
+  "author": "David Wells",
+  "license": "MIT",
+  "keywords": [
+    "file-finder",
+    "glob",
+    "fs"
+  ],
+  "homepage": "https://github.com/DavidWells/packages/tree/master/packages/util-globs",
+  "files": [
+    "src",
+    "package.json",
+    "package-lock.json",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DavidWells/packages/tree/master/packages/util-globs"
+  },
+  "scripts": {
+    "test": "uvu . '.test.([mc]js|[jt]sx?)$'",
+    "index": "uvu . 'index.test.([mc]js|[jt]sx?)$'",
+    "path": "uvu . 'get-file-path.test.([mc]js|[jt]sx?)$'",
+    "publish": "git push origin && git push origin --tags",
+    "release:patch": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.1",
+    "globrex": "^0.1.2",
+    "is-glob": "^4.0.3"
+  },
+  "devDependencies": {
+    "uvu": "^0.5.1"
+  }
+}
