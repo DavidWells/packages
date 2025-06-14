@@ -8,6 +8,8 @@
     "url": "https://github.com/DavidWells/components/packages/util-fs"
   },
   "scripts": {
+    "test": "uvu tests",
+    "types": "tsc",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
     "release:major": "npm version major && npm publish"
@@ -16,5 +18,10 @@
   "license": "MIT",
   "dependencies": {
     "rimraf": "^3.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "uvu": "^0.5.6"
   }
 }
