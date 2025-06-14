@@ -8,6 +8,7 @@
     "url": "https://github.com/DavidWells/components/packages/util-fs"
   },
   "scripts": {
+    "test": "uvu tests",
     "types": "tsc",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "uvu": "^0.5.6"
   }
 }
