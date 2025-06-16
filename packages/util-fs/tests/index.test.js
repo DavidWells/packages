@@ -308,17 +308,17 @@ test('deleteDir - should delete directory and contents', async () => {
 
 // Test getFileSize function
 test('getFileSize - should return correct file size', async () => {
-  const content = 'A'.repeat(1000) // 1000 bytes
+  const content = 'A'.repeat(100000) // 100000 bytes (~0.1 MB)
   await writeFile(testFile, content)
   
   const size = await getFileSize(testFile)
   
-  assert.is(size.bytes, 1000)
+  assert.is(size.bytes, 100000)
   assert.is(typeof size.mb, 'number')
   assert.ok(size.mb > 0)
   
-  // Check MB calculation (1000 bytes = ~0.001 MB)
-  const expectedMB = Math.round((1000 / (1024 * 1024)) * 100) / 100
+  // Check MB calculation (100000 bytes = ~0.095 MB)
+  const expectedMB = Math.round((100000 / (1024 * 1024)) * 100) / 100
   assert.is(size.mb, expectedMB)
   
   await deleteFile(testFile)
