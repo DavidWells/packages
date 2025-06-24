@@ -7,6 +7,9 @@
   "license": "MIT",
   "exports": {
     ".": "./src/index.js",
+    "./parse": "./src/parse.js",
+    "./frontmatter": "./src/frontmatter.js",
+    "./dedent": "./src/utils/dedent.js",
     "./toc": "./src/toc/index.js",
     "./find-code-blocks": "./src/find-code-blocks.js",
     "./find-headings": "./src/find-headings.js",
