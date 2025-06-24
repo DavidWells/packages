@@ -28,6 +28,37 @@ function removeLeadingH1(text = '') {
   return finalContent.trim()
 }
 
+/**
+* Adds line numbers to content
+* @param {Object} params
+* @param {string} params.content - The content to add line numbers to
+* @param {number} params.startLine - Starting line number (1-indexed)
+* @returns {string} Content with line numbers added
+*/
+function addLineNumbers({
+ content,
+ startLine,
+}) {
+ if (!content) {
+   return ""
+ }
+
+ return content
+   .split(/\r?\n/)
+   .map((line, index) => {
+     const lineNum = index + startLine
+     const numStr = String(lineNum)
+     // Handle large numbers differently
+     if (numStr.length >= 6) {
+       return `${numStr}\t${line}`
+     }
+     // Regular numbers get padding to 6 characters
+     const n = numStr.padStart(6, " ")
+     return `${n}\t${line}`
+   })
+   .join("\n") // TODO: This probably won't work for Windows
+}
+
 if (require.main === module) {
   const text = `
 # Hello World
@@ -41,6 +72,7 @@ function removeSurroundingEmptyLines(str) {
 }
 
 module.exports = {
+  addLineNumbers,
   removeLeadingH1,
   removeSurroundingEmptyLines,
 }
