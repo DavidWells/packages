@@ -1,6 +1,6 @@
 {
   "name": "@davidwells/fs-utils",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Simple FS utils",
   "main": "index.js",
   "repository": {
