@@ -20,7 +20,8 @@
     "./find-footnotes": "./src/find-footnotes.js",
     "./find-date": "./src/find-date.js",
     "./find-html-tags": "./src/find-html-tags.js",
-    "./string-utils": "./src/string-utils.js"
+    "./string-utils": "./src/string-utils.js",
+    "./extract-section": "./src/extract-section.js"
   },
   "scripts": {
     "test": "uvu src '.test.([mc]js|[jt]sx?)$'",
