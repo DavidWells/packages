@@ -63,7 +63,7 @@ p {
 ## Usage
 
 ```js
-postcss([ require('postcss-math') ])
+postcss([ require('@davidwells/postcss-math') ])
 ```
 
 See [PostCSS] docs for examples for your environment.
