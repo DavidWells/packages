@@ -143,7 +143,7 @@ async function getFilePaths(dirName, opts = {}) {
     // console.log('finalFastPatterns', finalFastPatterns)
     const entries = fg.globSync(finalFastPatterns, {
       cwd: directory,
-      // dot: true, 
+      // dot: true,
       globstar: true,
       extended: true,
       absolute: true,

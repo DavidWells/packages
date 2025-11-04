@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const { test } = require('uvu') 
+const { test } = require('uvu')
 const assert = require('uvu/assert')
 const { find, findUp } = require('../src')
 
@@ -31,7 +31,7 @@ test('return JS', async () => {
   })).sort()
 
   assert.equal(files, [
-    'cli.js',
+    '_usage.js',
     'src/index.js',
     'src/utils/get-gitignore.js',
     'tests/fixtures/gitignore/bar.js',
