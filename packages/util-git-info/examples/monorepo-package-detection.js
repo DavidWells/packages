@@ -5,7 +5,7 @@ async function detectChangedPackages() {
   let gitInfo
   try {
     gitInfo = await gitDetails({
-      base: 'main'
+      base: 'master'
     })
   } catch (err) {
     console.log('Error getting git info')
@@ -34,7 +34,7 @@ async function detectChangedPackages() {
     if (match) {
       const packageName = match[2]
       changedPackages.add(packageName)
-      
+
       if (!packageFiles[packageName]) {
         packageFiles[packageName] = {
           modified: [],
@@ -42,7 +42,7 @@ async function detectChangedPackages() {
           deleted: []
         }
       }
-      
+
       if (gitInfo.modifiedFiles.includes(file)) {
         packageFiles[packageName].modified.push(file)
       } else if (gitInfo.createdFiles.includes(file)) {
@@ -64,23 +64,23 @@ async function detectChangedPackages() {
   Array.from(changedPackages).sort().forEach(packageName => {
     const files = packageFiles[packageName]
     const totalFiles = files.modified.length + files.created.length + files.deleted.length
-    
+
     console.log(`📦 ${packageName}`)
     console.log(`   Files: ${totalFiles} changed`)
     console.log(`   • ${files.modified.length} modified`)
     console.log(`   • ${files.created.length} created`)
     console.log(`   • ${files.deleted.length} deleted`)
-    
+
     // Check for important file changes
     const hasPackageJson = [...files.modified, ...files.created].some(f => f.includes('package.json'))
     const hasTests = [...files.modified, ...files.created].some(f => f.includes('.test.') || f.includes('.spec.'))
     const hasSrcChanges = [...files.modified, ...files.created].some(f => f.includes('/src/'))
-    
+
     if (hasPackageJson) console.log('   ⚠️  Dependencies changed')
     if (hasSrcChanges) console.log('   📝 Source code changed')
     if (hasTests) console.log('   ✅ Tests updated')
     if (hasSrcChanges && !hasTests) console.log('   ⚠️  Consider updating tests')
-    
+
     console.log()
   })
 
@@ -91,7 +91,7 @@ async function detectChangedPackages() {
     const files = packageFiles[packageName]
     const hasPackageJson = [...files.modified, ...files.created].some(f => f.includes('package.json'))
     const hasSrcChanges = [...files.modified, ...files.created].some(f => f.includes('/src/'))
-    
+
     if (hasPackageJson) {
       console.log(`   • Reinstall dependencies in ${packageName}`)
     }
