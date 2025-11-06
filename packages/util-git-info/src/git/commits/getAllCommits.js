@@ -2,6 +2,19 @@ const { getFirstCommit } = require('./getFirstCommit')
 const { getLastCommit } = require('./getLastCommit')
 const { gitDetails } = require('../getDetails')
 
+/**
+ * @typedef {import('../../types').CommitInfo} CommitInfo
+ */
+
+/**
+ * Gets all commits in the repository from first to last
+ * @returns {Promise<CommitInfo[]>} Promise that resolves to array of all commits in chronological order
+ * @example
+ * const commits = await getAllCommits()
+ * commits.forEach(commit => {
+ *   console.log(`${commit.sha}: ${commit.subject}`)
+ * })
+ */
 async function getAllCommits() {
   const firstCommit = await getFirstCommit()
   // console.log('firstCommit', firstCommit)

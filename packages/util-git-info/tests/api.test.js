@@ -1,6 +1,8 @@
 const { env, chdir, cwd: getCwd } = require('process')
-
-const test = require('ava')
+const fs = require('fs')
+const path = require('path')
+const { test } = require('uvu')
+const assert = require('uvu/assert')
 
 const { gitDetails } = require('../src')
 
@@ -11,10 +13,23 @@ const HEAD = '3a2fc89924f0ef9f0244cad29f1d7404be5fe54b'
 const UNKNOWN_COMMIT = 'aaaaaaaa'
 const DEFAULT_OPTS = { base: BASE, head: HEAD }
 
-test('Should define all its methods and properties', async (t) => {
+// Wrapper to add timing to tests
+const timedTest = (name, fn) => {
+  test(name, async (context) => {
+    const start = Date.now()
+    try {
+      await fn(context)
+    } finally {
+      const duration = Date.now() - start
+      console.log(`  ⏱️  ${name}: ${duration}ms`)
+    }
+  })
+}
+
+timedTest('Should define all its methods and properties', async () => {
   const git = await gitDetails(DEFAULT_OPTS)
   // console.log('git', git)
-  t.deepEqual(Object.keys(git).sort(), [
+  assert.equal(Object.keys(git).sort(), [
     'commits',
     'createdFiles',
     'deletedFiles',
@@ -26,25 +41,28 @@ test('Should define all its methods and properties', async (t) => {
   ])
 })
 
-test('Should be callable with no options', async (t) => {
+timedTest('Should be callable with no options', async () => {
   const { linesOfCode } = await gitDetails()
   const lines = await linesOfCode()
-  t.true(Number.isInteger(lines))
+  assert.ok(Number.isInteger(lines))
 })
 
-test('Option "head" should have a default value', async (t) => {
-  const { linesOfCode } = await gitDetails({ base: BASE })
+timedTest('Option "head" should have a default value', async () => {
+  const result = await gitDetails({ base: BASE })
+  // write result to file
+  fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify(result, null, 2))
+  const { linesOfCode } = result
   const lines = await linesOfCode()
-  t.true(Number.isInteger(lines))
+  assert.ok(Number.isInteger(lines))
 })
 
-test('Options "base" and "head" can be the same commit', async (t) => {
+timedTest('Options "base" and "head" can be the same commit', async () => {
   const { linesOfCode, modifiedFiles, createdFiles, deletedFiles } = await gitDetails({ base: HEAD, head: HEAD })
   const lines = await linesOfCode()
-  t.is(lines, 0)
-  t.deepEqual(modifiedFiles, [])
-  t.deepEqual(createdFiles, [])
-  t.deepEqual(deletedFiles, [])
+  assert.is(lines, 0)
+  assert.equal(modifiedFiles, [])
+  assert.equal(createdFiles, [])
+  assert.equal(deletedFiles, [])
 })
 
 /*
@@ -90,18 +108,18 @@ test('Should throw when the current directory is invalid', (t) => {
 })
 */
 
-test('Should return the number of lines of code', async (t) => {
+timedTest('Should return the number of lines of code', async () => {
   const api = await gitDetails(DEFAULT_OPTS)
   const { linesOfCode } = api
   const lines = await linesOfCode()
-  t.is(lines, LINES_OF_CODE)
+  assert.is(lines, LINES_OF_CODE)
 })
 
-test('Should return the commits', async (t) => {
+timedTest('Should return the commits', async () => {
   const { commits } = await gitDetails(DEFAULT_OPTS)
-  t.is(commits.length, 34)
+  assert.is(commits.length, 34)
   const [{ sha, author, committer, subject, sanitizedSubject }] = commits
-  t.deepEqual(
+  assert.equal(
     { sha, author, committer, subject, sanitizedSubject },
     {
       sha: '3a2fc89924f0ef9f0244cad29f1d7404be5fe54b',
@@ -113,10 +131,10 @@ test('Should return the commits', async (t) => {
   )
 })
 
-test('Should return the modified/created/deleted files', async (t) => {
+timedTest('Should return the modified/created/deleted files', async () => {
   const api = await gitDetails(DEFAULT_OPTS)
   const { modifiedFiles, createdFiles, deletedFiles } = api
-  t.deepEqual(modifiedFiles, [
+  assert.equal(modifiedFiles, [
     'package.json',
     'packages/Form/README.md',
     'packages/Icon/package.json',
@@ -129,7 +147,7 @@ test('Should return the modified/created/deleted files', async (t) => {
     'packages/config-postcss/package.json',
     'packages/config-postcss/src/_mixins.js'
   ])
-  t.deepEqual(createdFiles, [
+  assert.equal(createdFiles, [
     'README.md',
     'packages/config-eslint/.editorconfig',
     'packages/config-eslint/.gitignore',
@@ -175,10 +193,10 @@ test('Should return the modified/created/deleted files', async (t) => {
     'packages/util-quick-persist/package.json',
     'scripts/docs.js'
   ])
-  t.deepEqual(deletedFiles, [])
+  assert.equal(deletedFiles, [])
 })
 
-test('Should return whether specific files are modified/created/deleted/edited', async (t) => {
+timedTest('Should return whether specific files are modified/created/deleted/edited', async () => {
   const { fileMatch } = await gitDetails(DEFAULT_OPTS)
   // Match json files but not package.json
   const matchApi = fileMatch('**/**.json', '!**/package.json')
@@ -193,23 +211,23 @@ test('Should return whether specific files are modified/created/deleted/edited',
     editedFiles,
   } = matchApi
 
-  t.deepEqual(modified, true)
-  t.deepEqual(created, true)
-  t.deepEqual(deleted, false)
-  t.deepEqual(edited, true)
+  assert.equal(modified, true)
+  assert.equal(created, true)
+  assert.equal(deleted, false)
+  assert.equal(edited, true)
 
-  t.deepEqual(modifiedFiles, [
+  assert.equal(modifiedFiles, [
     'packages/Input/example/package-lock.json',
     'packages/config-postcss/package-lock.json'
   ])
-  t.deepEqual(createdFiles, [
+  assert.equal(createdFiles, [
     'packages/config-eslint/tsconfig.json',
     'packages/config-prettier/index.json',
     'packages/util-git-info/package-lock.json',
     'packages/util-persist-previous-build-assets/package-lock.json'
   ])
-  t.deepEqual(deletedFiles, [])
-  t.deepEqual(editedFiles, [
+  assert.equal(deletedFiles, [])
+  assert.equal(editedFiles, [
     'packages/Input/example/package-lock.json',
     'packages/config-postcss/package-lock.json',
     'packages/config-eslint/tsconfig.json',
@@ -218,3 +236,5 @@ test('Should return whether specific files are modified/created/deleted/edited',
     'packages/util-persist-previous-build-assets/package-lock.json'
   ])
 })
+
+test.run()

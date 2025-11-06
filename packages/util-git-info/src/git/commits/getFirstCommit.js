@@ -2,8 +2,17 @@ const { getCommit } = require('./getCommit')
 const { spawn } = require('child_process')
 
 /**
- * Get first commit hash of repo
- * @returns {String} hash
+ * @typedef {import('../../types').CommitInfo} CommitInfo
+ */
+
+/**
+ * Gets the hash of the first commit in the repository
+ * Uses git rev-list to find the initial commit with no parents
+ * @returns {Promise<string>} Promise that resolves to the SHA hash of the first commit
+ * @throws {Error} Throws if git command fails or if not in a git repository
+ * @example
+ * const hash = await getFirstCommitHash()
+ * // Returns: 'a1b2c3d4e5f6...' (40-character SHA-1 hash)
  */
 function getFirstCommitHash() {
   return new Promise((resolve, reject) => {
@@ -24,8 +33,14 @@ function getFirstCommitHash() {
 }
 
 /**
- * Get first commit details of repo
- * @returns {Object} commit details
+ * Gets detailed information about the first commit in the repository
+ * @returns {Promise<CommitInfo>} Promise that resolves to commit details object containing SHA, author, committer, message, branch, and tags
+ * @throws {Error} Throws if git command fails or if not in a git repository
+ * @example
+ * const firstCommit = await getFirstCommit()
+ * console.log('Subject:', firstCommit.subject)
+ * console.log('Author:', firstCommit.author.name)
+ * console.log('SHA:', firstCommit.sha)
  */
 async function getFirstCommit() {
   const hash = await getFirstCommitHash()

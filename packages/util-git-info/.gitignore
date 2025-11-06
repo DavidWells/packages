@@ -8,6 +8,11 @@ yarn-error.log*
 misc
 old
 
+tests/result.json
+
+# TypeScript generated types
+types/
+
 # Runtime data
 pids
 *.pid
