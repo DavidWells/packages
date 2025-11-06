@@ -1,0 +1,54 @@
+{
+  "compilerOptions": {
+    // Enable type checking for JavaScript files
+    "allowJs": true,
+    "checkJs": true,
+
+    // Generate declaration files (.d.ts) from JSDoc
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationDir": "./types",
+
+    // Module settings
+    "module": "commonjs",
+    "target": "ES2020",
+    "moduleResolution": "node",
+
+    // Strict type checking options
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "strictBindCallApply": false,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": false,
+    "alwaysStrict": false,
+
+    // Additional checks
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
+
+    // Skip strict checks for JSDoc type generation
+    "noEmitOnError": false,
+
+    // Module resolution
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Output settings
+    "outDir": "./types",
+    "rootDir": "./src"
+  },
+  "include": [
+    "src/**/*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "tests",
+    "**/*.test.js",
+    "types"
+  ]
+}

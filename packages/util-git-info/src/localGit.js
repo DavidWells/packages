@@ -8,7 +8,23 @@ const { localGetNumstat } = require('./git/localGetNumstat')
 
 const DEBUG_TIMING = false
 
+/**
+ * @typedef {import('./types').GitDetails} GitDetails
+ */
+
+/**
+ * LocalGit class for working with local git repositories
+ * @class
+ */
 class LocalGit {
+  /**
+   * Creates a new LocalGit instance
+   * @param {Object} options - Configuration options
+   * @param {string} [options.from] - Alias for base commit/branch
+   * @param {string} [options.base='master'] - The base commit/branch to compare from
+   * @param {string} [options.to] - Alias for head commit/branch
+   * @param {string} [options.head='HEAD'] - The head commit/branch to compare to
+   */
   constructor(options) {
     this.options = options
     this.getFileContents = path => {
@@ -19,6 +35,10 @@ class LocalGit {
     this.base = this.options.from || this.options.base || 'master'
     this.head = this.options.to || this.options.head || 'HEAD'
   }
+  /**
+   * Gets the git diff between base and head
+   * @returns {Promise<string>} Promise that resolves to the git diff output
+   */
   async getGitDiff() {
     if (this.gitDiff) {
       return this.gitDiff
@@ -26,13 +46,25 @@ class LocalGit {
     this.gitDiff = await localGetDiff(this.base, this.head)
     return this.gitDiff
   }
+  /**
+   * Validates that there are changes between base and head
+   * @returns {Promise<boolean>} Promise that resolves to true if there are changes, false otherwise
+   */
   async validateThereAreChanges() {
     const diff = await this.getGitDiff()
     return diff.trim().length > 0
   }
+  /**
+   * Gets platform review DSL representation (not implemented for local git)
+   * @returns {Promise<null>} Always resolves to null
+   */
   async getPlatformReviewDSLRepresentation() {
     return null
   }
+  /**
+   * Gets the git representation including modified/created/deleted files, commits, and utility functions
+   * @returns {Promise<GitDetails>} Promise that resolves to git details object
+   */
   async getPlatformGitRepresentation() {
     const base = this.base
     const head = this.head
@@ -66,9 +98,18 @@ class LocalGit {
 
     return result
   }
+  /**
+   * Gets inline comments (not implemented for local git)
+   * @param {*} _ - Unused parameter
+   * @returns {Promise<Array>} Always resolves to empty array
+   */
   async getInlineComments(_) {
     return []
   }
+  /**
+   * Gets review info (not implemented for local git)
+   * @returns {Promise<Object>} Always resolves to empty object
+   */
   async getReviewInfo() {
     return {}
   }
