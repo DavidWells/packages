@@ -169,6 +169,38 @@ if (testFiles.edited) {
   console.log('Tests have been modified - run test suite')
 }
 
+## Examples
+
+Check out the [`examples`](./examples) directory for more use cases:
+
+### Basic Examples
+- [`get-git-data.js`](./examples/get-git-data.js) - Get basic git information between commits
+- [`get-all-commits.js`](./examples/get-all-commits.js) - Retrieve and display all commits
+- [`get-git-files.js`](./examples/get-git-files.js) - Get list of all git-tracked files
+- [`get-specific-commit-info.js`](./examples/get-specific-commit-info.js) - Get detailed information about a specific commit
+
+### File Change Detection
+- [`detect-file-changes.js`](./examples/detect-file-changes.js) - Detect specific file changes between commits
+- [`file-match-patterns.js`](./examples/file-match-patterns.js) - Comprehensive guide to file matching patterns
+
+### Statistics & Analysis
+- [`get-lines-of-code-changed.js`](./examples/get-lines-of-code-changed.js) - Calculate lines of code changed
+- [`branch-comparison.js`](./examples/branch-comparison.js) - Compare two branches with detailed statistics
+
+### Automation & CI/CD
+- [`check-config-changes.js`](./examples/check-config-changes.js) - Detect configuration file changes for CI/CD pipelines
+- [`code-review-helper.js`](./examples/code-review-helper.js) - Automated code review checklist and suggestions
+- [`monorepo-package-detection.js`](./examples/monorepo-package-detection.js) - Detect which packages changed in a monorepo
+- [`generate-release-notes.js`](./examples/generate-release-notes.js) - Auto-generate release notes from commits
+
+Run any example:
+
+```bash
+node examples/get-git-data.js
+node examples/code-review-helper.js
+node examples/monorepo-package-detection.js
+```
+
 ## Prior art
 
 This was originally found in [danger.js](https://danger.systems/js/) and extracted into this utility
