@@ -5,6 +5,15 @@ const { findUp } = require('./utils/find-up')
 
 const regex = /^([A-Z?])\s+(\d{6})\s+([a-z0-9]{40})\s+(\d+)\s+(.*)$/u
 
+/**
+ * Gets all files tracked by Git in the repository with their hashes
+ * @param {string} [dir] - Optional directory path to search from. If not provided, searches from current working directory
+ * @returns {Promise<Record<string, string>>} Promise that resolves to an object mapping file paths to their Git hashes (or modified timestamps for changed files)
+ * @throws {Error} Throws if the directory is not a Git repository
+ * @example
+ * const files = await getGitFiles('/path/to/repo')
+ * // Returns: { 'src/index.js': 'abc123...', 'package.json': 'def456...' }
+ */
 async function getGitFiles(dir) {
   const directory = (dir) ? dir : findUp('.git', process.cwd())
   if (!directory) {
@@ -23,6 +32,13 @@ async function getGitFiles(dir) {
   })
 }
 
+/**
+ * Parses the output from git ls-files command and creates a mapping of file paths to hashes
+ * @param {string} data - Raw output from git ls-files command
+ * @param {string} dir - The directory path being processed
+ * @returns {Record<string, string>} Object mapping file paths to their Git hashes or modification timestamps
+ * @private
+ */
 function parseFiles(data, dir) {
   const ret = {}
   data.split('\n').forEach((line) => {
@@ -48,6 +64,16 @@ function parseFiles(data, dir) {
 
 const cache = {}
 
+/**
+ * Gets Git files relative to a specific directory with optional exclusions and caching
+ * @param {string} directory - The directory path to get relative files from
+ * @param {string[]} [exclude=[]] - Optional array of file paths to exclude from results
+ * @returns {Promise<Record<string, string>>} Promise that resolves to an object mapping relative file paths to their Git hashes (or modified timestamps for changed files)
+ * @throws {Error} Throws if the directory is not in a Git repository
+ * @example
+ * const files = await getGitFilesRelative('/path/to/repo/src', ['node_modules'])
+ * // Returns: { 'index.js': 'abc123...', 'utils/helper.js': 'def456...' }
+ */
 async function getGitFilesRelative(directory, exclude = []) {
   const root = findUp('.git', directory)
   if (!root) throw new Error(`Not a Git repository ${directory}`)

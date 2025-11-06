@@ -112,7 +112,7 @@ module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
     if (config.getNumstat) {
       return await config.getNumstat(config.baseSHA, config.headSHA)
     }
-    
+
     // Fallback to original implementation
     const [
       createdFilesDiffs,
