@@ -1,5 +1,6 @@
 const { env, chdir, cwd: getCwd } = require('process')
-
+const fs = require('fs')
+const path = require('path')
 const { test } = require('uvu')
 const assert = require('uvu/assert')
 
@@ -12,7 +13,20 @@ const HEAD = '3a2fc89924f0ef9f0244cad29f1d7404be5fe54b'
 const UNKNOWN_COMMIT = 'aaaaaaaa'
 const DEFAULT_OPTS = { base: BASE, head: HEAD }
 
-test('Should define all its methods and properties', async () => {
+// Wrapper to add timing to tests
+const timedTest = (name, fn) => {
+  test(name, async (context) => {
+    const start = Date.now()
+    try {
+      await fn(context)
+    } finally {
+      const duration = Date.now() - start
+      console.log(`  ⏱️  ${name}: ${duration}ms`)
+    }
+  })
+}
+
+timedTest('Should define all its methods and properties', async () => {
   const git = await gitDetails(DEFAULT_OPTS)
   // console.log('git', git)
   assert.equal(Object.keys(git).sort(), [
@@ -27,19 +41,22 @@ test('Should define all its methods and properties', async () => {
   ])
 })
 
-test('Should be callable with no options', async () => {
+timedTest('Should be callable with no options', async () => {
   const { linesOfCode } = await gitDetails()
   const lines = await linesOfCode()
   assert.ok(Number.isInteger(lines))
 })
 
-test('Option "head" should have a default value', async () => {
-  const { linesOfCode } = await gitDetails({ base: BASE })
+timedTest('Option "head" should have a default value', async () => {
+  const result = await gitDetails({ base: BASE })
+  // write result to file
+  fs.writeFileSync(path.join(__dirname, 'result.json'), JSON.stringify(result, null, 2))
+  const { linesOfCode } = result
   const lines = await linesOfCode()
   assert.ok(Number.isInteger(lines))
 })
 
-test('Options "base" and "head" can be the same commit', async () => {
+timedTest('Options "base" and "head" can be the same commit', async () => {
   const { linesOfCode, modifiedFiles, createdFiles, deletedFiles } = await gitDetails({ base: HEAD, head: HEAD })
   const lines = await linesOfCode()
   assert.is(lines, 0)
@@ -91,14 +108,14 @@ test('Should throw when the current directory is invalid', (t) => {
 })
 */
 
-test('Should return the number of lines of code', async () => {
+timedTest('Should return the number of lines of code', async () => {
   const api = await gitDetails(DEFAULT_OPTS)
   const { linesOfCode } = api
   const lines = await linesOfCode()
   assert.is(lines, LINES_OF_CODE)
 })
 
-test('Should return the commits', async () => {
+timedTest('Should return the commits', async () => {
   const { commits } = await gitDetails(DEFAULT_OPTS)
   assert.is(commits.length, 34)
   const [{ sha, author, committer, subject, sanitizedSubject }] = commits
@@ -114,7 +131,7 @@ test('Should return the commits', async () => {
   )
 })
 
-test('Should return the modified/created/deleted files', async () => {
+timedTest('Should return the modified/created/deleted files', async () => {
   const api = await gitDetails(DEFAULT_OPTS)
   const { modifiedFiles, createdFiles, deletedFiles } = api
   assert.equal(modifiedFiles, [
@@ -179,7 +196,7 @@ test('Should return the modified/created/deleted files', async () => {
   assert.equal(deletedFiles, [])
 })
 
-test('Should return whether specific files are modified/created/deleted/edited', async () => {
+timedTest('Should return whether specific files are modified/created/deleted/edited', async () => {
   const { fileMatch } = await gitDetails(DEFAULT_OPTS)
   // Match json files but not package.json
   const matchApi = fileMatch('**/**.json', '!**/package.json')

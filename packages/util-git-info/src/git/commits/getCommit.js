@@ -3,7 +3,7 @@ const { parse, getPrettyFormat } = require('./utils/pretty-format')
 const HASH_REGEX = /\b[0-9a-f]{5,40}\b/
 
 function getCommit(hash, options) {
-  if (!hash || HASH_REGEX.test(hash)) {
+  if (!hash || !HASH_REGEX.test(hash)) {
     throw new Error('Must use git hash')
   }
   /* git show
