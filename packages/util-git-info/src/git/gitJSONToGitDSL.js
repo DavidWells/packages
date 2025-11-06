@@ -108,6 +108,12 @@ module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
     }, Object.create(null))
   }
   const linesOfCode = async () => {
+    // Use optimized numstat if available (single git command vs hundreds)
+    if (config.getNumstat) {
+      return await config.getNumstat(config.baseSHA, config.headSHA)
+    }
+    
+    // Fallback to original implementation
     const [
       createdFilesDiffs,
       modifiedFilesDiffs,

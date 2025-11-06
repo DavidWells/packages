@@ -8,6 +8,8 @@ yarn-error.log*
 misc
 old
 
+tests/result.json
+
 # Runtime data
 pids
 *.pid
