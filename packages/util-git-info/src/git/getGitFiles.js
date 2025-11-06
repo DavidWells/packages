@@ -40,6 +40,7 @@ async function getGitFiles(dir) {
  * @private
  */
 function parseFiles(data, dir) {
+  /** @type {Record<string, string>} */
   const ret = {}
   data.split('\n').forEach((line) => {
     const m = regex.exec(line)
@@ -82,6 +83,7 @@ async function getGitFilesRelative(directory, exclude = []) {
     cache[root] = await getGitFiles(root)
   }
   const files = cache[root]
+  /** @type {Record<string, string>} */
   const ret = {}
 
   Object.entries(files)

@@ -18,11 +18,14 @@ const { LocalGit } = require('../localGit')
  * console.log('Created files:', git.createdFiles)
  * console.log('Deleted files:', git.deletedFiles)
  *
- * // Use fileMatch to filter files by pattern
- * const srcFiles = git.fileMatch('src/**\/*.js')
+ * // Use fileMatch to filter files by pattern(s)
+ * const srcFiles = git.fileMatch('src/**\/*.js', '!**\/*.test.js')
  * if (srcFiles.modified) {
  *   console.log('Source files changed:', srcFiles.modifiedFiles)
  * }
+ * 
+ * // Or use array syntax
+ * const configFiles = git.fileMatch(['**\/package.json', '**\/*.config.js'])
  */
 async function gitDetails(opts = {}) {
   const localPlatform = new LocalGit(opts)

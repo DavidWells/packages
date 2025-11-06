@@ -6,8 +6,8 @@
   "types": "types/index.d.ts",
   "scripts": {
     "test": "uvu . \\.test\\.js$",
-    "types:check": "tsc --noEmit",
-    "types:build": "tsc",
+    "check": "tsc --noEmit",
+    "types": "tsc",
     "prepublishOnly": "npm run types:build",
     "publish": "git push origin && git push origin --tags",
     "release:patch": "npm version patch && npm publish",

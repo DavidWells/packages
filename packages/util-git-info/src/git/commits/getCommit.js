@@ -1,5 +1,6 @@
 const { executeCommand } = require('../utils/exec')
 const { parse, getPrettyFormat } = require('./utils/pretty-format')
+
 const HASH_REGEX = /\b[0-9a-f]{5,40}\b/
 
 /**

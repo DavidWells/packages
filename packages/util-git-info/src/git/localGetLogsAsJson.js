@@ -40,10 +40,12 @@ function getLogAsJson() {
   })
 }
 
-getLogAsJson((d) => {
-  console.log('d', d)
-}).catch((e) => {
-  console.log('e', e)
-})
+if (require.main === module) {
+  getLogAsJson().then((d) => {
+    console.log('d', d)
+  }).catch((e) => {
+    console.log('e', e)
+  })
+}
 
 module.exports.getLogAsJson = getLogAsJson
