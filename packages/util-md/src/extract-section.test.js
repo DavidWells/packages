@@ -9,7 +9,6 @@ const FILE_WITH_HEADERS = path.join(__dirname, '../fixtures/file-with-headings.m
 function read(filePath) {
   return fs.readFileSync(filePath, 'utf-8')
 }
-
 test('extractSection - basic functionality', () => {
   const content = `# Main Title
 
@@ -99,7 +98,7 @@ Content here.`
 
   const result = extractSection(content, 'section two', { caseSensitive: true })
   assert.equal(result, undefined)
-  
+
   const result2 = extractSection(content, 'SECTION TWO', { caseSensitive: true })
   assert.equal(result2, 'Content here.')
 })
@@ -205,6 +204,37 @@ Content here.`
   assert.equal(result3, 'Content here.')
 })
 
+test('extractSection - all content under level 1 heading', () => {
+  const content = `# Main Title
+
+## First Section
+
+Content here.
+
+## Last Section
+
+This is the last section.
+It has multiple lines.
+And ends the document.
+
+# Foo
+
+sub things in diff section`
+
+  const result = extractSection(content, 'Main Title', { level: 1 })
+  assert.equal(result,
+`## First Section
+
+Content here.
+
+## Last Section
+
+This is the last section.
+It has multiple lines.
+And ends the document.`
+)
+})
+
 test('extractSection - section at end of document', () => {
   const content = `# Main Title
 
@@ -258,10 +288,10 @@ More child content.`
 
 test('extractSection - with real fixture file', () => {
   const contents = read(FILE_WITH_HEADERS)
-  
+
   // Extract a section from the fixture file
   const result = extractSection(contents, 'Heading 2 with paragraph 1 😃')
-  
+
   assert.equal(typeof result, 'string')
   assert.ok(result.includes('Lorem ipsum dolor sit amet'))
   assert.ok(result.includes('Vivamus vitae mi ligula, non hendrerit urna.'))
@@ -269,10 +299,10 @@ test('extractSection - with real fixture file', () => {
 
 test('extractSection - with real fixture file including nested content', () => {
   const contents = read(FILE_WITH_HEADERS)
-  
+
   // Extract a section that has nested content
   const result = extractSection(contents, 'Heading 2 with paragraph 2')
-  
+
   assert.equal(typeof result, 'string')
   assert.ok(result.includes('Lorem ipsum dolor sit amet'))
   assert.ok(result.includes('### Nested Heading 3 with paragraph'))
@@ -282,25 +312,25 @@ test('extractSection - with real fixture file including nested content', () => {
 test('extractSection - input validation', () => {
   // Test with empty content
   assert.equal(extractSection('', 'Section'), undefined)
-  
+
   // Test with null content
   assert.equal(extractSection(null, 'Section'), undefined)
-  
+
   // Test with undefined content
   assert.equal(extractSection(undefined, 'Section'), undefined)
-  
+
   // Test with non-string content
   assert.equal(extractSection(123, 'Section'), undefined)
-  
+
   // Test with empty section title
   assert.equal(extractSection('# Content', ''), undefined)
-  
+
   // Test with null section title
   assert.equal(extractSection('# Content', null), undefined)
-  
+
   // Test with undefined section title
   assert.equal(extractSection('# Content', undefined), undefined)
-  
+
   // Test with non-string section title
   assert.equal(extractSection('# Content', 123), undefined)
 })
@@ -308,7 +338,7 @@ test('extractSection - input validation', () => {
 test('extractSection - whitespace handling', () => {
   const content = `# Main Title
 
-##   Section With Extra Spaces   
+##   Section With Extra Spaces
 
 Content here.
 
@@ -331,6 +361,42 @@ Content here.`
 
   const result = extractSection(content, 'Empty Section')
   assert.equal(result, '')
+})
+
+
+test('extractSection - handles conflicting inner content', () => {
+  const content = `# Main Title
+
+## Hello Section
+
+Hello content.
+
+\`\`\`markdown
+# inner thing
+\`\`\`
+
+\`\`\`markdown
+## inner thing 2
+\`\`\`
+
+nice.
+
+## Another Section
+
+Content here.`
+
+  const result = extractSection(content, 'Hello Section')
+  assert.equal(result, `Hello content.
+
+\`\`\`markdown
+# inner thing
+\`\`\`
+
+\`\`\`markdown
+## inner thing 2
+\`\`\`
+
+nice.`)
 })
 
 test.run()
