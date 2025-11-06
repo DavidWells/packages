@@ -1,10 +1,11 @@
-const test = require('ava')
+const { test } = require('uvu')
+const assert = require('uvu/assert')
 const { formatJSON, attemptToFix } = require('./localGetCommits')
 
-test('generates a JSON-like commit message', async (t) => {
-  t.deepEqual(formatJSON, '{ "sha": "%H", "parents": "%p", "author": {"name": "%an", "email": "%ae" }, "committer": {"name": "%cn", "email": "%ce" }, "subject": "%s", "sanitizedSubject": "%f", "body": "%b", "authoredOn": "%aI", "committedOn": "%cI"},')
+test('generates a JSON-like commit message', async () => {
+  assert.equal(formatJSON, '{ "sha": "%H", "parents": "%p", "author": {"name": "%an", "email": "%ae" }, "committer": {"name": "%cn", "email": "%ce" }, "subject": "%s", "sanitizedSubject": "%f", "body": "%b", "authoredOn": "%aI", "committedOn": "%cI"},')
   const withoutComma = formatJSON.substring(0, formatJSON.length - 1)
-  t.notThrows(() => JSON.parse(withoutComma))
+  assert.not.throws(() => JSON.parse(withoutComma))
 })
 
 const malformedCommits = `  {
@@ -71,9 +72,9 @@ const malformedCommits = `  {
       "committedOn": "2021-10-01T15:07:15-07:00"
     },`
 
-test('Parses commits', async (t) => {
+test('Parses commits', async () => {
   const commits = attemptToFix(malformedCommits.substring(0, malformedCommits.length - 1))
-  t.deepEqual(commits, [
+  assert.equal(commits, [
     {
       sha: '5212346705e719bb46db0b0e651e2752de4078ff',
       parents: '077df0e',
@@ -120,3 +121,5 @@ test('Parses commits', async (t) => {
     }
   ])
 })
+
+test.run()
