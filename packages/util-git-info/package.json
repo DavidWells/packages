@@ -23,6 +23,7 @@
     "README.md"
   ],
   "dependencies": {
+    "configorama": "^1.0.0",
     "debug": "^4.1.1",
     "json5": "^2.1.1",
     "jsonpointer": "^4.0.1",

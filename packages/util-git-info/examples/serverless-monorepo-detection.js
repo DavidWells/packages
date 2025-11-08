@@ -1,5 +1,6 @@
 const path = require('path')
 const fs = require('fs')
+const configorama = require('configorama')
 const { gitDetails } = require('../src')
 
 /**
@@ -264,46 +265,23 @@ async function extractFunctionHandlers(configFile) {
   const ext = path.extname(configFile)
 
   try {
-    if (ext === '.yml' || ext === '.yaml') {
-      // Parse YAML file
-      const content = fs.readFileSync(configFile, 'utf8')
+    // Use configorama to parse the serverless config file
+    // It handles YAML, JSON, TOML, and JS/TS files automatically
+    const config = await configorama(configFile)
 
-      // Simple regex-based parsing for functions section
-      // This is a basic implementation - for production use a proper YAML parser
-      const functionMatches = content.matchAll(/^\s{2}([a-zA-Z0-9_-]+):\s*$/gm)
+    // Extract function handlers from the parsed config
+    if (config && config.functions) {
+      const functions = config.functions
 
-      for (const match of functionMatches) {
-        const functionName = match[1]
-
-        // Look for handler definition after function name
-        const handlerRegex = new RegExp(`${functionName}:[\\s\\S]*?handler:\\s*([^\\s\\n]+)`, 'm')
-        const handlerMatch = content.match(handlerRegex)
-
-        if (handlerMatch && handlerMatch[1]) {
-          const handler = handlerMatch[1]
+      for (const [functionName, functionConfig] of Object.entries(functions)) {
+        if (functionConfig && functionConfig.handler) {
+          const handler = functionConfig.handler
+          // Determine file extension based on config file type and handler
+          const fileExt = ext === '.ts' ? '.ts' : '.js'
           handlers.push({
             name: functionName,
             handler: handler,
-            file: handler.split('.')[0] + '.js' // Approximate file path
-          })
-        }
-      }
-    } else if (ext === '.js' || ext === '.ts') {
-      // For JS/TS files, read and try to parse the module exports
-      const content = fs.readFileSync(configFile, 'utf8')
-
-      // Look for functions object definition
-      const functionsMatch = content.match(/functions:\s*{([^}]+)}/s)
-      if (functionsMatch) {
-        const functionsContent = functionsMatch[1]
-        const handlerMatches = functionsContent.matchAll(/handler:\s*['"]([^'"]+)['"]/g)
-
-        for (const match of handlerMatches) {
-          const handler = match[1]
-          handlers.push({
-            name: 'function',
-            handler: handler,
-            file: handler.split('.')[0] + (ext === '.ts' ? '.ts' : '.js')
+            file: handler.split('.')[0] + fileExt // Approximate file path
           })
         }
       }
