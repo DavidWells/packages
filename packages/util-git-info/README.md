@@ -191,6 +191,7 @@ Check out the [`examples`](./examples) directory for more use cases:
 - [`check-config-changes.js`](./examples/check-config-changes.js) - Detect configuration file changes for CI/CD pipelines
 - [`code-review-helper.js`](./examples/code-review-helper.js) - Automated code review checklist and suggestions
 - [`monorepo-package-detection.js`](./examples/monorepo-package-detection.js) - Detect which packages changed in a monorepo
+- [`serverless-monorepo-detection.js`](./examples/serverless-monorepo-detection.js) - Detect changes in serverless projects within a monorepo
 - [`generate-release-notes.js`](./examples/generate-release-notes.js) - Auto-generate release notes from commits
 
 Run any example:
@@ -199,6 +200,7 @@ Run any example:
 node examples/get-git-data.js
 node examples/code-review-helper.js
 node examples/monorepo-package-detection.js
+node examples/serverless-monorepo-detection.js
 ```
 
 ## Prior art
