@@ -4,7 +4,11 @@ const { gitDetails } = require('../src')
 async function detectChangedPackages() {
   let gitInfo
   try {
-    gitInfo = await gitDetails({ base: 'master', head: 'HEAD' })
+    // Compare against uncommitted working directory changes:
+    gitInfo = await gitDetails({ base: 'master', includeWorkingChanges: true })
+
+    // Alternatively, to compare between commits use:
+    // gitInfo = await gitDetails({ base: 'master', head: 'HEAD' })
   } catch (err) {
     console.log('Error getting git info')
     console.log(err)
@@ -13,8 +17,6 @@ async function detectChangedPackages() {
 
   console.log('📦 Monorepo Package Change Detection\n')
   console.log('═══════════════════════════════════════\n')
-
-  console.log('gitInfo', gitInfo)
 
   // Get all changed files
   const allChangedFiles = [

@@ -1,6 +1,6 @@
 {
   "name": "git-er-done",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Utility for dealing with modified, created, deleted files since a git commit",
   "main": "src/index.js",
   "types": "types/index.d.ts",
