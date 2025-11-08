@@ -5,6 +5,7 @@ const { localGetDiff } = require('./git/localGetDiff')
 const { localGetFileAtSHA } = require('./git/localGetFileAtSHA')
 const { localGetCommits } = require('./git/localGetCommits')
 const { localGetNumstat } = require('./git/localGetNumstat')
+const { getGitRoot } = require('./git/getGitRoot')
 
 const DEBUG_TIMING = false
 
@@ -23,7 +24,8 @@ class LocalGit {
    * @param {string} [options.from] - Alias for base commit/branch
    * @param {string} [options.base='master'] - The base commit/branch to compare from
    * @param {string} [options.to] - Alias for head commit/branch
-   * @param {string} [options.head='HEAD'] - The head commit/branch to compare to
+   * @param {string} [options.head='HEAD'] - The head commit/branch to compare to. Pass empty string '' to compare against working directory
+   * @param {boolean} [options.includeWorkingChanges=false] - If true, compares against uncommitted changes in working directory instead of HEAD
    */
   constructor(options) {
     this.options = options
@@ -33,7 +35,17 @@ class LocalGit {
     }
     this.name = 'local git'
     this.base = this.options.from || this.options.base || 'master'
-    this.head = this.options.to || this.options.head || 'HEAD'
+
+    // Determine head: support includeWorkingChanges flag or explicit empty string
+    if (this.options.includeWorkingChanges) {
+      this.head = ''
+    } else if (this.options.to !== undefined) {
+      this.head = this.options.to
+    } else if (this.options.head !== undefined) {
+      this.head = this.options.head
+    } else {
+      this.head = 'HEAD'
+    }
   }
   /**
    * Gets the git diff between base and head
@@ -84,8 +96,10 @@ class LocalGit {
     const t3 = DEBUG_TIMING ? Date.now() : 0
     if (DEBUG_TIMING) console.log(`    ⏱️  diffToGitJSONDSL: ${t3 - t2}ms (parsing ${diff.split('\n').length} lines of diff)`)
 
+    const gitRoot = await getGitRoot()
+
     const config = {
-      repo: process.cwd(),
+      repo: gitRoot,
       baseSHA: base,
       headSHA: head,
       getFileContents: localGetFileAtSHA,

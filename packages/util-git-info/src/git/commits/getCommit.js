@@ -37,10 +37,12 @@ function getCommit(hash, options) {
 }
 
 /*
-getCommit('361a0cc56b323911af9fb740fe2e37cf134092ed').then((d) => {
-  console.log('getCommit', d)
-})
-/**/
+if (require.main === module) {
+  getCommit('361a0cc56b323911af9fb740fe2e37cf134092ed').then((d) => {
+    console.log('getCommit', d)
+  })
+}
+/** */
 
 module.exports = {
   getCommit

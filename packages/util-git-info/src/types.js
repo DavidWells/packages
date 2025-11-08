@@ -43,7 +43,7 @@
  * @property {string[]} deletedFiles - Array of deleted file paths
  * @property {CommitInfo[]} commits - Array of commits between base and head
  * @property {string} lastCommit - SHA of the last commit
- * @property {string} dir - Path to the git repository
+ * @property {string} dir - Root path of the git repository
  * @property {function(): Promise<number>} linesOfCode - Async function that returns total lines of code changed
  */
 

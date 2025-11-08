@@ -63,22 +63,28 @@ function getCurrentCommitMessage() {
 }
 
 /*
-getLastCommit().then((d) => {
-  console.log('getLastCommit', d)
-})
-/**/
+if (require.main === module) {
+  getLastCommit().then((d) => {
+    console.log('getLastCommit', d)
+  })
+}
+/** */
 
 /*
-getCurrentRevision().then((d) => {
-  console.log('getCurrentRevision', d)
-})
-/**/
+if (require.main === module) {
+  getCurrentRevision().then((d) => {
+    console.log('getCurrentRevision', d)
+  })
+}
+/** */
 
 /*
-getCurrentCommitMessage().then((commitMessage) => {
-  console.log('getCurrentCommitMessage')
-  console.log(commitMessage)
-})
+if (require.main === module) {
+  getCurrentCommitMessage().then((commitMessage) => {
+    console.log('getCurrentCommitMessage')
+    console.log(commitMessage)
+  })
+}
 /**/
 
 module.exports = {

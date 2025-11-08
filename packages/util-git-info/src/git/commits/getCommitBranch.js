@@ -17,10 +17,12 @@ function getCommitBranch(sha) {
 }
 
 /*
-getCommitBranch('0750a8c57f85f2cdda9920c04441e2ce1a41e590').then((d) => {
-  console.log('getCommitBranch', d)
-})
-/**/
+if (require.main === module) {
+  getCommitBranch('0750a8c57f85f2cdda9920c04441e2ce1a41e590').then((d) => {
+    console.log('getCommitBranch', d)
+  })
+}
+/** */
 
 module.exports = {
   getCommitBranch

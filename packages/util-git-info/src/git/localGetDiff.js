@@ -5,7 +5,12 @@ const d = debug('localGetDiff')
 
 const localGetDiff = (base, head) => {
   return new Promise((resolve, reject) => {
-    const args = ['diff', `${base}...${head}`]
+    // If head is empty/null/undefined, compare against working directory
+    // Otherwise use three-dot syntax for commit-to-commit comparison
+    const args = !head || head === ''
+      ? ['diff', base]
+      : ['diff', `${base}...${head}`]
+
     let stdout = ''
     const child = spawn('git', args, { env: process.env })
     d('> git', args.join(' '))

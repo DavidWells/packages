@@ -48,11 +48,12 @@ async function getFirstCommit() {
 }
 
 /*
-// Example
-getFirstCommit().then((d) => {
-  console.log('getFirstCommit', d)
-})
-/**/
+if (require.main === module) {
+  getFirstCommit().then((d) => {
+    console.log('getFirstCommit', d)
+  })
+}
+/** */
 
 module.exports = {
   getFirstCommit,

@@ -32,10 +32,12 @@ async function getAllCommits() {
 }
 
 /*
-getAllCommits().then((d) => {
-  console.log('xd', d)
-})
-/**/
+if (require.main === module) {
+  getAllCommits().then((d) => {
+    console.log('xd', d)
+  })
+}
+/** */
 
 module.exports = {
   getAllCommits
