@@ -1,0 +1,16 @@
+{
+  "name": "api-service",
+  "version": "1.0.0",
+  "description": "API service for the monorepo",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "deploy": "serverless deploy"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1000.0"
+  },
+  "devDependencies": {
+    "serverless": "^3.0.0"
+  }
+}
