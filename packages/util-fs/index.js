@@ -8,6 +8,11 @@ const fs = promises
 
 const deleteDir = promisify(rimraf)
 
+/**
+ * Delete a file, ignoring ENOENT errors
+ * @param {string} s - Path to file to delete
+ * @returns {Promise<void>}
+ */
 const deleteFile = (s) => fs.unlink(s).catch((e) => {
   // console.log('e', e)
   // ignore already deleted files
@@ -17,6 +22,11 @@ const deleteFile = (s) => fs.unlink(s).catch((e) => {
   throw e
 })
 
+/**
+ * Check if a file exists
+ * @param {string} s - Path to check
+ * @returns {Promise<boolean>}
+ */
 const fileExists = (s) => fs.access(s, constants.F_OK).then(() => true).catch(() => false)
 
 /* Recursive read dir
@@ -31,11 +41,25 @@ async function readDir(dir, recursive = true, allFiles = []) {
 }
 */
 
+/**
+ * @typedef {Object} ReadDirOptions
+ * @property {boolean} [recursive=true] - Whether to read directories recursively
+ * @property {(string|RegExp)[]} [exclude=[]] - Patterns to exclude from results
+ */
+
 // Recursive read dir
 const readDirOpts = {
   recursive: true,
   exclude: []
 }
+
+/**
+ * Recursively read directory contents
+ * @param {string} dir - Directory path to read
+ * @param {ReadDirOptions} [opts] - Options for reading directory
+ * @param {string[]} [allFiles] - Internal parameter for recursive calls
+ * @returns {Promise<string[]>} Array of file paths
+ */
 async function readDir(dir, opts = readDirOpts, allFiles = []) {
   let files = (await fs.readdir(dir)).map((file) => path.join(dir, file))
   const exclude = !Array.isArray(opts.exclude) ? [opts.exclude] : opts.exclude
@@ -60,11 +84,24 @@ async function readDir(dir, opts = readDirOpts, allFiles = []) {
   return allFiles
 }
 
+/**
+ * Create a directory recursively
+ * @param {string} directoryPath - Path to directory to create
+ * @param {boolean} [recursive=true] - Whether to create parent directories
+ * @returns {Promise<void>}
+ */
 async function createDir(directoryPath, recursive = true) {
   // ignore errors - throws if the path already exists
   return fs.mkdir(directoryPath, { recursive: recursive }).catch((e) => {})
 }
 
+/**
+ * Copy a directory recursively
+ * @param {string} src - Source directory path
+ * @param {string} dest - Destination directory path
+ * @param {boolean} [recursive=true] - Whether to copy recursively
+ * @returns {Promise<void>}
+ */
 async function copyDir(src, dest, recursive = true) {
   await createDir(dest, recursive) // Ensure directory exists
 
@@ -84,6 +121,17 @@ async function copyDir(src, dest, recursive = true) {
   }))
 }
 
+/**
+ * @typedef {Object} FileSizeResult
+ * @property {number} bytes - File size in bytes
+ * @property {number} mb - File size in megabytes (rounded to 2 decimal places)
+ */
+
+/**
+ * Get file size information
+ * @param {string} filePath - Path to the file
+ * @returns {Promise<FileSizeResult>} File size information
+ */
 async function getFileSize(filePath) {
   return new Promise((resolve, reject) => {
     stat(filePath, (err, stats) => {
@@ -101,15 +149,33 @@ async function getFileSize(filePath) {
   })
 }
 
+/**
+ * Write data to a file
+ * @type {typeof import('fs').promises.writeFile}
+ */
+const writeFile = fs.writeFile
+
+/**
+ * Read data from a file
+ * @type {typeof import('fs').promises.readFile}
+ */
+const readFile = fs.readFile
+
+/**
+ * Copy a file from source to destination
+ * @type {typeof import('fs').promises.copyFile}
+ */
+const copyFile = fs.copyFile
+
 module.exports = {
   // Check if file exists
   fileExists: fileExists,
   // Write file
-  writeFile: fs.writeFile,
+  writeFile: writeFile,
   // Read file
-  readFile: fs.readFile,
+  readFile: readFile,
   // Copy file
-  copyFile: fs.copyFile,
+  copyFile: copyFile,
   // Delete file
   deleteFile: deleteFile,
   // Check if directory exists
