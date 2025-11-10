@@ -149,15 +149,33 @@ async function getFileSize(filePath) {
   })
 }
 
+/**
+ * Write data to a file
+ * @type {typeof import('fs').promises.writeFile}
+ */
+const writeFile = fs.writeFile
+
+/**
+ * Read data from a file
+ * @type {typeof import('fs').promises.readFile}
+ */
+const readFile = fs.readFile
+
+/**
+ * Copy a file from source to destination
+ * @type {typeof import('fs').promises.copyFile}
+ */
+const copyFile = fs.copyFile
+
 module.exports = {
   // Check if file exists
   fileExists: fileExists,
   // Write file
-  writeFile: fs.writeFile,
+  writeFile: writeFile,
   // Read file
-  readFile: fs.readFile,
+  readFile: readFile,
   // Copy file
-  copyFile: fs.copyFile,
+  copyFile: copyFile,
   // Delete file
   deleteFile: deleteFile,
   // Check if directory exists
