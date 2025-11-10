@@ -1,0 +1,16 @@
+{
+  "name": "worker-service",
+  "version": "1.0.0",
+  "description": "Worker service for background jobs",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "deploy": "serverless deploy"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1000.0"
+  },
+  "devDependencies": {
+    "serverless": "^3.0.0"
+  }
+}
