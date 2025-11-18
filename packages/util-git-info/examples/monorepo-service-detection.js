@@ -2,6 +2,8 @@ const path = require('path')
 const fs = require('fs')
 const configorama = require('configorama')
 const { gitDetails } = require('../src')
+const { extractDeps } = require('@davidwells/extract-deps')
+const { depGraph } = require('@davidwells/extract-deps/dep-graph')
 
 /**
  * Serverless Monorepo Change Detection
@@ -49,6 +51,8 @@ async function detectServerlessChanges() {
     ...gitInfo.deletedFiles
   ]
 
+  console.log('allChangedFiles', allChangedFiles)
+
   // Find all directories containing serverless config files
   const serverlessDirectories = await findServerlessDirectories(gitInfo.dir)
   console.log('serverlessDirectories')
@@ -66,12 +70,25 @@ async function detectServerlessChanges() {
   // Check each serverless directory for changes
   for (const projectDir of serverlessDirectories) {
     const projectPath = path.relative(gitInfo.dir, projectDir)
+    console.log('projectPath', projectPath)
     const configFile = getServerlessConfigFile(projectDir)
 
     // Check if any files in this directory (or subdirectories) have changed
-    const projectChanges = allChangedFiles.filter(file =>
-      file.startsWith(projectPath + '/') || file === projectPath
-    )
+    const projectChanges = allChangedFiles.filter(file => {
+      // File is the project directory itself
+      if (file === projectPath) {
+        return true
+      }
+
+      // File is in a subdirectory of the project
+      if (file.startsWith(projectPath + '/')) {
+        return true
+      }
+
+      return false
+    })
+
+    console.log('projectChanges', projectChanges)
 
     if (projectChanges.length === 0) {
       continue // No changes in this project
@@ -194,14 +211,22 @@ async function detectServerlessChanges() {
 
   // Export for CI/CD pipelines
   console.log('📋 Changed projects (JSON for CI/CD):')
-  console.log(JSON.stringify(changedProjects.map(p => ({
-    name: p.name,
-    path: p.path,
-    packageJsonChanged: p.packageJsonChanged,
-    configChanged: p.configChanged,
-    functionsChanged: p.handlerChanges.length,
-    handlers: p.functionHandlers.map(h => h.handler)
-  })), null, 2))
+  console.log(JSON.stringify(changedProjects.map(p => {
+    // Filter to only include handlers that have actually changed
+    const changedHandlers = p.functionHandlers.filter(h =>
+      p.handlerChanges.some(change => change.includes(h.file))
+    )
+
+    return {
+      name: p.name,
+      path: p.path,
+      packageJsonChanged: p.packageJsonChanged,
+      configChanged: p.configChanged,
+      functionsChanged: p.handlerChanges.length,
+      changedFunctions: changedHandlers.map(h => h.name),
+      handlers: changedHandlers
+    }
+  }), null, 2))
 }
 
 /**
@@ -279,7 +304,13 @@ async function extractFunctionHandlers(configFile) {
   try {
     // Use configorama to parse the serverless config file
     // It handles YAML, JSON, TOML, and JS/TS files automatically
-    const config = await configorama(configFile)
+    const configDetails = await configorama(configFile, {
+      returnMetadata: true
+    })
+    console.log('configDetails', configDetails)
+    const config = configDetails.config
+    const metadata = configDetails.metadata
+
     console.log('serverless config', config)
 
     // Extract function handlers from the parsed config
@@ -291,6 +322,16 @@ async function extractFunctionHandlers(configFile) {
           const handler = functionConfig.handler
           // Determine file extension based on config file type and handler
           const fileExt = ext === '.ts' ? '.ts' : '.js'
+          const parentDir = path.dirname(configFile)
+          const fileName = handler.split('.')[0] + fileExt
+          const handlerPath = path.resolve(parentDir, fileName)
+          console.log('parentDir', parentDir)
+          console.log('handlerPath', handlerPath)
+          const fileGraph = depGraph(handlerPath)
+          console.log('fileGraph', fileGraph)
+          const content = fs.readFileSync(handlerPath, 'utf8')
+          const dependencies = extractDeps(content)
+          console.log('dependencies', dependencies)
           handlers.push({
             name: functionName,
             ...(functionConfig.description ? { description: functionConfig.description } : {}),
