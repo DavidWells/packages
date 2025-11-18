@@ -20,6 +20,8 @@ custom:
 functions:
   processJob:
     handler: handlers/jobs.process
+    env:
+      FOO: ${file(./env.${self:provider.stage}.yml):FOO}
     events:
       - sqs:
           arn:
