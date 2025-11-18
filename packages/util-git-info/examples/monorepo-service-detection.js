@@ -27,6 +27,143 @@ function deepLog() {
   for (let i = 0; i < arguments.length; i++) logValue(arguments[i], i === 0, i === arguments.length - 1)
 }
 
+/**
+ * Deployment strategy rules
+ * Maps config change paths to the type of deployment required
+ */
+const deploymentStrategyRules = {
+  // Fast SDK updates - Lambda configuration only (~5 seconds)
+  fastSdkUpdate: [
+    'functions.*.environment',          // Environment variables
+    'functions.*.environment.*',        // Individual env var changes
+    'functions.*.env',                  // Function-level env (Serverless shorthand)
+    'functions.*.env.*',                // Individual function-level env var changes
+    'functions.*.memorySize',           // Memory allocation
+    'functions.*.timeout',              // Timeout value
+    'functions.*.layers',               // Lambda layers
+    'functions.*.vpc',                  // VPC configuration
+    'functions.*.tracing',              // X-Ray tracing mode
+    'functions.*.reservedConcurrency',  // Reserved concurrent executions
+    'functions.*.description',          // Function description
+  ],
+
+  // Full deploy required - affects CloudFormation resources (~60+ seconds)
+  fullDeploy: [
+    'functions.*.events',               // Any event configuration changes
+    'functions.*.events.*',             // Individual event changes
+    'functions.*.handler',              // Handler changes (usually with code)
+    'functions.*.runtime',              // Runtime changes
+    'functions.*.role',                 // IAM role changes
+    'functions.*.iamRoleStatements',    // IAM policy changes
+    'provider.*',                       // Provider-level changes
+    'service.*',                        // Service-level changes
+  ]
+}
+
+/**
+ * Match a change path against a pattern with wildcards
+ */
+function matchesPathPattern(path, pattern) {
+  const regexPattern = pattern
+    .split('.')
+    .map(part => part === '*' ? '[^.]+' : part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('\\.')
+  const regex = new RegExp(`^${regexPattern}$`)
+  return regex.test(path)
+}
+
+/**
+ * Determine the deployment strategy required for a specific change
+ */
+function getDeploymentStrategy(changePath) {
+  // Check fullDeploy patterns first (more restrictive)
+  for (const pattern of deploymentStrategyRules.fullDeploy) {
+    if (matchesPathPattern(changePath, pattern)) {
+      return 'fullDeploy'
+    }
+  }
+
+  // Check fastSdkUpdate patterns
+  for (const pattern of deploymentStrategyRules.fastSdkUpdate) {
+    if (matchesPathPattern(changePath, pattern)) {
+      return 'fastSdkUpdate'
+    }
+  }
+
+  // Unknown change type - default to full deploy for safety
+  return 'fullDeploy'
+}
+
+/**
+ * Categorize config file reference changes by deployment strategy
+ * Maps changed files → variable paths → deployment strategy
+ */
+function categorizeConfigChanges(changedFiles, metadata, gitInfo, configFile) {
+  const categorized = {
+    fastSdkUpdate: [],
+    fullDeploy: [],
+    unknown: []
+  }
+
+  if (!metadata || !metadata.variables || changedFiles.length === 0) {
+    return categorized
+  }
+
+  const parentDir = path.dirname(configFile)
+
+  // Map each changed file to the variables that reference it
+  for (const changedFile of changedFiles) {
+    const absoluteChangedFile = path.isAbsolute(changedFile)
+      ? changedFile
+      : path.join(gitInfo.dir, changedFile)
+
+    // Check each variable to see if it references this changed file
+    for (const [variableString, variableInstances] of Object.entries(metadata.variables)) {
+      // Check if this variable references a file
+      if (!variableString.includes('${file(')) continue
+
+      for (const instance of variableInstances) {
+        const configPath = instance.path
+
+        // Check if any resolve details reference the changed file
+        const referencesChangedFile = instance.resolveDetails?.some(detail => {
+          if (detail.varType && detail.varType.startsWith('file(')) {
+            // Extract the file path from the varType
+            const match = detail.varType.match(/file\(([^)]+)\)/)
+            if (match) {
+              const referencedFile = match[1]
+              const absoluteRef = path.resolve(parentDir, referencedFile)
+              return absoluteRef === absoluteChangedFile ||
+                     path.relative(gitInfo.dir, absoluteRef) === changedFile
+            }
+          }
+          return false
+        })
+
+        if (referencesChangedFile) {
+          const strategy = getDeploymentStrategy(configPath)
+          const changeInfo = {
+            file: changedFile,
+            variable: variableString,
+            configPath: configPath,
+            strategy: strategy
+          }
+
+          if (strategy === 'fastSdkUpdate') {
+            categorized.fastSdkUpdate.push(changeInfo)
+          } else if (strategy === 'fullDeploy') {
+            categorized.fullDeploy.push(changeInfo)
+          } else {
+            categorized.unknown.push(changeInfo)
+          }
+        }
+      }
+    }
+  }
+
+  return categorized
+}
+
 
 /**
  * Serverless Monorepo Change Detection
@@ -134,7 +271,7 @@ async function detectServerlessChanges() {
     console.log('configChanges', configChanges)
 
     // Extract function details from the serverless config
-    const { functionDetails, configFileRefs, fileGlobPatterns } = await extractFunctionDetails(configFile)
+    const { functionDetails, configFileRefs, fileGlobPatterns, metadata } = await extractFunctionDetails(configFile)
 
     console.log('functionDetails', functionDetails)
     console.log('configFileRefs', configFileRefs)
@@ -167,6 +304,10 @@ async function detectServerlessChanges() {
     })
 
     console.log('configFileRefChanges', configFileRefChanges)
+
+    // Categorize config file ref changes by deployment strategy
+    const categorizedChanges = categorizeConfigChanges(configFileRefChanges, metadata, gitInfo, configFile)
+    console.log('categorizedChanges', categorizedChanges)
 
     // Detect changes to function handler files and their dependencies
     const handlerChanges = projectChanges.filter(file => {
@@ -206,7 +347,8 @@ async function detectServerlessChanges() {
         modified: configFileRefChanges.filter(f => gitInfo.modifiedFiles.includes(f)).map(f => path.relative(projectPath, f)),
         created: configFileRefChanges.filter(f => gitInfo.createdFiles.includes(f)).map(f => path.relative(projectPath, f)),
         deleted: configFileRefChanges.filter(f => gitInfo.deletedFiles.includes(f)).map(f => path.relative(projectPath, f))
-      }
+      },
+      deploymentStrategy: categorizedChanges
     })
   }
 
@@ -225,9 +367,37 @@ async function detectServerlessChanges() {
     console.log(`   Path: ${project.path}`)
     console.log(`   Config: ${project.configFile}\n`)
     console.log(`   Files changed: ${project.totalChanges}`)
-    console.log(`   • ${project.changes.modified.length} modified`)
-    console.log(`   • ${project.changes.created.length} created`)
-    console.log(`   • ${project.changes.deleted.length} deleted`)
+
+    // Modified files
+    if (project.changes.modified.length > 0) {
+      console.log(`   • ${project.changes.modified.length} modified`)
+      project.changes.modified.forEach(file => {
+        console.log(`     - ${path.relative(project.path, file)}`)
+      })
+    } else {
+      console.log(`   • ${project.changes.modified.length} modified`)
+    }
+
+    // Created files
+    if (project.changes.created.length > 0) {
+      console.log(`   • ${project.changes.created.length} created`)
+      project.changes.created.forEach(file => {
+        console.log(`     - ${path.relative(project.path, file)}`)
+      })
+    } else {
+      console.log(`   • ${project.changes.created.length} created`)
+    }
+
+    // Deleted files
+    if (project.changes.deleted.length > 0) {
+      console.log(`   • ${project.changes.deleted.length} deleted`)
+      project.changes.deleted.forEach(file => {
+        console.log(`     - ${path.relative(project.path, file)}`)
+      })
+    } else {
+      console.log(`   • ${project.changes.deleted.length} deleted`)
+    }
+
     console.log()
 
     // Important changes
@@ -256,6 +426,25 @@ async function detectServerlessChanges() {
         project.configFileRefChanges.deleted.forEach(file => {
           console.log(`        • ${file}`)
         })
+      }
+
+      // Show deployment strategy analysis
+      if (project.deploymentStrategy) {
+        const { fastSdkUpdate, fullDeploy } = project.deploymentStrategy
+        if (fastSdkUpdate.length > 0) {
+          console.log('\n   ⚡ Fast SDK Update Required (~5 seconds):')
+          fastSdkUpdate.forEach(change => {
+            console.log(`        • ${change.configPath}`)
+            console.log(`          File: ${change.file}`)
+          })
+        }
+        if (fullDeploy.length > 0) {
+          console.log('\n   🚀 Full Deploy Required (~60+ seconds):')
+          fullDeploy.forEach(change => {
+            console.log(`        • ${change.configPath}`)
+            console.log(`          File: ${change.file}`)
+          })
+        }
       }
     }
 
@@ -330,7 +519,8 @@ async function detectServerlessChanges() {
       functionsChanged: p.handlerChanges.length,
       changedFunctions: changedHandlers.map(h => h.name),
       handlers: changedHandlers,
-      configFileRefChanges: p.configFileRefChanges
+      configFileRefChanges: p.configFileRefChanges,
+      deploymentStrategy: p.deploymentStrategy
     }
   }), null, 2))
 }
@@ -401,12 +591,13 @@ function getServerlessConfigFile(dir) {
  */
 async function extractFunctionDetails(configFile) {
   if (!configFile || !fs.existsSync(configFile)) {
-    return { functionDetails: [], configFileRefs: [], fileGlobPatterns: [] }
+    return { functionDetails: [], configFileRefs: [], fileGlobPatterns: [], metadata: null }
   }
 
   const handlers = []
   const configFileRefs = []
   const fileGlobPatterns = []
+  let metadata = null
   const ext = path.extname(configFile)
 
   try {
@@ -417,7 +608,7 @@ async function extractFunctionDetails(configFile) {
     })
     console.log('configDetails', configDetails)
     const config = configDetails.config
-    const metadata = configDetails.metadata
+    metadata = configDetails.metadata
     const resolutionHistory = configDetails.resolutionHistory
 
     deepLog('configDetails.metadata.variables', metadata.variables)
@@ -480,7 +671,7 @@ async function extractFunctionDetails(configFile) {
     console.error(`Error parsing ${configFile}:`, err.message)
   }
 
-  return { functionDetails: handlers, configFileRefs, fileGlobPatterns }
+  return { functionDetails: handlers, configFileRefs, fileGlobPatterns, metadata }
 }
 
 // Run the detection
