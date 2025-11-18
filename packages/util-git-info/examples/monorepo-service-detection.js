@@ -1,13 +1,11 @@
 const path = require('path')
 const fs = require('fs')
+const util = require('util')
 const configorama = require('configorama')
 const { gitDetails } = require('../src')
 const { extractDeps } = require('@davidwells/extract-deps')
 const { resolveDepPaths } = require('@davidwells/extract-deps/dep-graph')
-
-
-const util = require('util')
-
+const { getFormattedDiff } = require('../src/git/getDiffFormatted')
 
 function logValue(value, isFirst, isLast) {
   const prefix = `${isFirst ? '> ' : ''}`
@@ -165,6 +163,14 @@ function categorizeConfigChanges(changedFiles, metadata, gitInfo, configFile) {
 }
 
 
+function displayGitDiff({ filePath, gitInfo }) {
+  return getFormattedDiff({
+    filePath,
+    gitRootDir: gitInfo.dir,
+    leftMargin: 4
+  })
+}
+
 /**
  * Serverless Monorepo Change Detection
  *
@@ -189,7 +195,7 @@ async function detectServerlessChanges() {
     return
   }
 
-  console.log('gitInfo', gitInfo)
+  // console.log('gitInfo', gitInfo)
 
   console.log('⚡ Serverless Monorepo Change Detection\n')
   console.log('═══════════════════════════════════════════\n')
@@ -202,7 +208,7 @@ async function detectServerlessChanges() {
     '**/serverless.js'
   ])
 
-  console.log(serverlessConfigsGitInfo)
+  // console.log('serverlessConfigsGitInfo',)
 
   // Get all changed files
   const allChangedFiles = [
@@ -217,6 +223,9 @@ async function detectServerlessChanges() {
   const serverlessDirectories = await findServerlessDirectories(gitInfo.dir)
   console.log('serverlessDirectories')
   console.log(serverlessDirectories)
+
+
+  console.log('gitInfo.dir', gitInfo.dir)
 
   if (serverlessDirectories.length === 0) {
     console.log('ℹ️  No serverless projects found in repository')
@@ -271,11 +280,18 @@ async function detectServerlessChanges() {
     console.log('configChanges', configChanges)
 
     // Extract function details from the serverless config
-    const { functionDetails, configFileRefs, fileGlobPatterns, metadata } = await extractFunctionDetails(configFile)
+    const {
+      functionDetails,
+      configFileRefs,
+      fileGlobPatterns,
+      metadata
+    } = await extractFunctionDetails(configFile)
 
+    /*
     console.log('functionDetails', functionDetails)
     console.log('configFileRefs', configFileRefs)
     console.log('fileGlobPatterns', fileGlobPatterns)
+    /** */
 
     // Check if any config file references have changed
     const configFileRefChanges = projectChanges.filter(file => {
@@ -352,7 +368,7 @@ async function detectServerlessChanges() {
     })
   }
 
-  console.log('changedProjects', changedProjects)
+  // console.log('changedProjects', changedProjects)
 
   if (changedProjects.length === 0) {
     console.log('✅ No serverless projects have changed')
@@ -362,109 +378,186 @@ async function detectServerlessChanges() {
   console.log(`🎯 ${changedProjects.length} serverless project(s) changed:\n`)
 
   // Display detailed information for each changed project
-  changedProjects.forEach((project, index) => {
-    console.log(`${index + 1}. 📦 ${project.name}`)
+  for (let index = 0; index < changedProjects.length; index++) {
+    const project = changedProjects[index]
+    console.log('─────────────────────────────────────────────────────────────────────────────────────────────')
+    console.log(`\n${index + 1}. ☁️ ${project.name}`)
     console.log(`   Path: ${project.path}`)
-    console.log(`   Config: ${project.configFile}\n`)
-    console.log(`   Files changed: ${project.totalChanges}`)
+    console.log(`   Config: ${project.configFile}`)
+
+    // Function handlers
+    // if (project.functionDetails.length > 0) {
+    // console.log(`   Functions (${project.functionDetails.length}):`)
+    //   project.functionDetails.forEach(func => {
+    //     const isChanged = project.handlerChanges.some(change =>
+    //       change.includes(func.file)
+    //     )
+    //     const changeIndicator = isChanged ? '(Updated)' : ''
+    //     console.log(`     • ${func.name}: ${func.handler} ${changeIndicator}`)
+    //   })
+    // }
+    // console.log()
+
+    console.log(`   Files changed: ${project.totalChanges}\n`)
 
     // Modified files
     if (project.changes.modified.length > 0) {
-      console.log(`   • ${project.changes.modified.length} modified`)
+      console.log(`    • ${project.changes.modified.length} modified`)
       project.changes.modified.forEach(file => {
         console.log(`     - ${path.relative(project.path, file)}`)
       })
-    } else {
-      console.log(`   • ${project.changes.modified.length} modified`)
     }
 
     // Created files
     if (project.changes.created.length > 0) {
-      console.log(`   • ${project.changes.created.length} created`)
+      console.log(`    • ${project.changes.created.length} created`)
       project.changes.created.forEach(file => {
         console.log(`     - ${path.relative(project.path, file)}`)
       })
-    } else {
-      console.log(`   • ${project.changes.created.length} created`)
     }
 
     // Deleted files
     if (project.changes.deleted.length > 0) {
-      console.log(`   • ${project.changes.deleted.length} deleted`)
+      console.log(`    • ${project.changes.deleted.length} deleted`)
       project.changes.deleted.forEach(file => {
         console.log(`     - ${path.relative(project.path, file)}`)
       })
-    } else {
-      console.log(`   • ${project.changes.deleted.length} deleted`)
     }
 
     console.log()
 
     // Important changes
     if (project.packageJsonChanged) {
-      console.log('   ⚠️  Dependencies changed (package.json)')
+      console.log('   📝  Dependencies changed (package.json)')
     }
     if (project.configChanged) {
-      console.log('   ⚠️  Serverless configuration changed')
+      console.log(`   📝  ${path.basename(project.configFile)} configuration changed\n`)
+
+      // Show formatted diff for serverless config
+      const formattedDiff = await displayGitDiff({
+        filePath: project.configFile,
+        gitInfo,
+      })
+      if (formattedDiff) {
+        console.log(formattedDiff)
+      }
     }
     if (project.configFileRefChanged) {
-      console.log('   ⚠️  Config file references changed')
+      console.log('   📝  Config file references changed')
       if (project.configFileRefChanges.modified.length > 0) {
-      console.log('       Modified:')
-        project.configFileRefChanges.modified.forEach(file => {
-          console.log(`        • ${file}`)
-        })
+        console.log('       Modified:', project.configFileRefChanges.modified.join(', '))
+        console.log()
+        for (const file of project.configFileRefChanges.modified) {
+          // Show formatted diff for modified config file reference
+          const filePath = path.join(project.path, file)
+          const formattedDiff = await displayGitDiff({
+            filePath,
+            gitInfo,
+          })
+          if (formattedDiff) {
+            console.log(formattedDiff)
+          }
+        }
       }
       if (project.configFileRefChanges.created.length > 0) {
-      console.log('       Created:')
-        project.configFileRefChanges.created.forEach(file => {
-          console.log(`        • ${file}`)
-        })
+        console.log('       Created:', project.configFileRefChanges.created.join(', '))
+        console.log()
       }
       if (project.configFileRefChanges.deleted.length > 0) {
-      console.log('       Deleted:')
-        project.configFileRefChanges.deleted.forEach(file => {
-          console.log(`        • ${file}`)
-        })
+        console.log('       Deleted:', project.configFileRefChanges.deleted.join(', '))
+        console.log()
       }
 
-      // Show deployment strategy analysis
-      if (project.deploymentStrategy) {
-        const { fastSdkUpdate, fullDeploy } = project.deploymentStrategy
-        if (fastSdkUpdate.length > 0) {
-          console.log('\n   ⚡ Fast SDK Update Required (~5 seconds):')
-          fastSdkUpdate.forEach(change => {
-            console.log(`        • ${change.configPath}`)
-            console.log(`          File: ${change.file}`)
-          })
-        }
-        if (fullDeploy.length > 0) {
-          console.log('\n   🚀 Full Deploy Required (~60+ seconds):')
-          fullDeploy.forEach(change => {
-            console.log(`        • ${change.configPath}`)
-            console.log(`          File: ${change.file}`)
-          })
-        }
-      }
+      // // Show deployment strategy analysis
+      // if (project.deploymentStrategy) {
+      //   const { fastSdkUpdate, fullDeploy } = project.deploymentStrategy
+      //   if (fastSdkUpdate.length > 0) {
+      //     console.log('\n   ⚡ Fast SDK Update Required (~5 seconds):')
+      //     fastSdkUpdate.forEach(change => {
+      //       console.log(`        • ${change.configPath}`)
+      //       console.log(`          File: ${change.file}`)
+      //     })
+      //   }
+      //   if (fullDeploy.length > 0) {
+      //     console.log('\n   🚀 Full Deploy Required (~60+ seconds):')
+      //     fullDeploy.forEach(change => {
+      //       console.log(`        • ${change.configPath}`)
+      //       console.log(`          File: ${change.file}`)
+      //     })
+      //   }
+      // }
     }
 
-    // Function handlers
-    if (project.functionDetails.length > 0) {
-      console.log(`\n   📝  Functions (${project.functionDetails.length}):`)
-      project.functionDetails.forEach(func => {
-        const isChanged = project.handlerChanges.some(change =>
+    // Log function change details here
+    const fnIndent = '   '
+    if (project.handlerChanges.length > 0) {
+      console.log(`\n${fnIndent}🔄 Function handler code changes:\n`)
+
+      const shownDiffs = new Set()
+
+      for (const func of project.functionDetails) {
+        const handlerChanged = project.handlerChanges.some(change =>
           change.includes(func.file)
         )
-        const changeIndicator = isChanged ? '🔄' : '  '
-        console.log(`      ${changeIndicator} ${func.name}: ${func.handler}`)
-        if (isChanged) {
-        console.log(`         File: ${func.file}`)
+
+        // Check for changed dependencies
+        const changedDeps = []
+        if (func.dependencies && func.dependencies.length > 0) {
+          for (const dep of func.dependencies) {
+            const relativeDep = path.relative(gitInfo.dir, dep)
+            const isDepChanged = project.changes.modified.some(file =>
+              file === relativeDep || file.includes(relativeDep)
+            )
+            if (isDepChanged) {
+              changedDeps.push(relativeDep)
+            }
+          }
         }
-      })
+
+        const hasChanges = handlerChanged || changedDeps.length > 0
+
+
+
+        if (hasChanges) {
+          console.log(`${fnIndent} ${func.name}: ${func.handler}`)
+
+          // Show formatted diff for changed handler file
+          let functionThePath
+          if (handlerChanged) {
+            functionThePath = path.join(project.path, func.file)
+            const normalizedPath = path.relative(gitInfo.dir, functionThePath)
+
+            if (!shownDiffs.has(normalizedPath)) {
+              const formattedDiff = await displayGitDiff({
+                filePath: functionThePath,
+                gitInfo,
+              })
+              if (formattedDiff) {
+                console.log(formattedDiff)
+                shownDiffs.add(normalizedPath)
+              }
+            }
+          }
+
+          const cleanDeps = changedDeps.filter(dep => dep !== functionThePath)
+
+          // Show formatted diffs for changed dependencies
+          for (const dep of cleanDeps) {
+            if (!shownDiffs.has(dep)) {
+              console.log(`\n${fnIndent} Dependency file changed:`)
+              const formattedDiff = await displayGitDiff({ filePath: dep, gitInfo })
+              if (formattedDiff) console.log(formattedDiff)
+              shownDiffs.add(dep)
+            }
+          }
+        }
+      }
     }
 
     console.log()
-  })
+  }
+
+  return
 
   console.log('═══════════════════════════════════════════')
   console.log('\n🔧 Recommended Actions:\n')
@@ -606,15 +699,18 @@ async function extractFunctionDetails(configFile) {
     const configDetails = await configorama(configFile, {
       returnMetadata: true
     })
-    console.log('configDetails', configDetails)
+    // console.log('configDetails', configDetails)
     const config = configDetails.config
     metadata = configDetails.metadata
     const resolutionHistory = configDetails.resolutionHistory
 
+    /*
     deepLog('configDetails.metadata.variables', metadata.variables)
     deepLog('configDetails.resolutionHistory', resolutionHistory)
     console.log('serverless config', config)
     console.log('serverless config.functions', config.functions)
+    /** */
+
     // Extract file references from config metadata
     if (metadata && metadata.resolvedFileRefs) {
       const parentDir = path.dirname(configFile)
@@ -652,7 +748,7 @@ async function extractFunctionDetails(configFile) {
           let depPaths = []
           try {
             depPaths = resolveDepPaths(handlerPath, { verifyGraph: false })
-            console.log('depPaths', depPaths)
+            //console.log('depPaths', depPaths)
           } catch (err) {
             console.log(`Warning: Could not resolve dependencies for ${handlerPath}:`, err.message)
           }
