@@ -13,6 +13,10 @@ tests/result.json
 # TypeScript generated types
 types/
 
+# Repos
+git-split-diffs
+git-split-diffs-repo
+_archive
 # Runtime data
 pids
 *.pid
