@@ -2,10 +2,10 @@ const path = require('path')
 const fs = require('fs')
 const util = require('util')
 const configorama = require('configorama')
-const { gitDetails } = require('../src')
+const { gitDetails } = require('../../src')
 const { extractDeps } = require('@davidwells/extract-deps')
 const { resolveDepPaths } = require('@davidwells/extract-deps/dep-graph')
-const { getFormattedDiff } = require('../src/git/getDiffFormatted')
+const { getFormattedDiff } = require('../../src/git/getDiffFormatted')
 
 function logValue(value, isFirst, isLast) {
   const prefix = `${isFirst ? '> ' : ''}`
@@ -567,8 +567,6 @@ async function detectServerlessChanges() {
 
     console.log()
   }
-
-  return
 
   console.log('═══════════════════════════════════════════')
   console.log('\n🔧 Recommended Actions:\n')
