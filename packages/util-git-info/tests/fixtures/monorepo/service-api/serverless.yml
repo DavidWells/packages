@@ -16,6 +16,8 @@ provider:
 functions:
   getUsers:
     handler: src/handlers/users.get
+    env:
+      TABLE_NAME: ${file(./env.yml):TABLE_NAME}
     events:
       - http:
           path: /users
