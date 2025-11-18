@@ -3,7 +3,30 @@ const fs = require('fs')
 const configorama = require('configorama')
 const { gitDetails } = require('../src')
 const { extractDeps } = require('@davidwells/extract-deps')
-const { depGraph } = require('@davidwells/extract-deps/dep-graph')
+const { resolveDepPaths } = require('@davidwells/extract-deps/dep-graph')
+
+
+const util = require('util')
+
+
+function logValue(value, isFirst, isLast) {
+  const prefix = `${isFirst ? '> ' : ''}`
+  if (typeof value === 'object') {
+    console.log(`${util.inspect(value, false, null, true)}\n`)
+    return
+  }
+  if (isFirst) {
+    console.log(`\n\x1b[33m${prefix}${value}\x1b[0m`)
+    return
+  }
+  console.log((typeof value === 'string' && value.includes('\n')) ? `\`${value}\`` : value)
+  // isLast && console.log(`\x1b[37m\x1b[1m${'─'.repeat(94)}\x1b[0m\n`)
+}
+
+function deepLog() {
+  for (let i = 0; i < arguments.length; i++) logValue(arguments[i], i === 0, i === arguments.length - 1)
+}
+
 
 /**
  * Serverless Monorepo Change Detection
@@ -110,16 +133,57 @@ async function detectServerlessChanges() {
 
     console.log('configChanges', configChanges)
 
-    // Extract function handlers from the serverless config
-    const functionHandlers = await extractFunctionHandlers(configFile)
+    // Extract function details from the serverless config
+    const { functionDetails, configFileRefs, fileGlobPatterns } = await extractFunctionDetails(configFile)
 
-    console.log('functionHandlers', functionHandlers)
+    console.log('functionDetails', functionDetails)
+    console.log('configFileRefs', configFileRefs)
+    console.log('fileGlobPatterns', fileGlobPatterns)
 
-    // Detect changes to function handler files
+    // Check if any config file references have changed
+    const configFileRefChanges = projectChanges.filter(file => {
+      // Check exact file references
+      const exactMatch = configFileRefs.some(ref => {
+        const relativeRef = path.relative(gitInfo.dir, ref)
+        return file === relativeRef || file.includes(relativeRef)
+      })
+
+      if (exactMatch) return true
+
+      // Check glob patterns using gitInfo.fileMatch
+      const globMatch = fileGlobPatterns.some(({ pattern, baseDir }) => {
+        // Normalize pattern by removing leading './'
+        const normalizedPattern = pattern.startsWith('./') ? pattern.slice(2) : pattern
+        // Construct full pattern from git root
+        const fullPattern = path.join(path.relative(gitInfo.dir, baseDir), normalizedPattern)
+        const matches = gitInfo.fileMatch(fullPattern)
+        // Check if current file is in the matches
+        return matches.modifiedFiles.includes(file) ||
+               matches.createdFiles.includes(file) ||
+               matches.deletedFiles.includes(file)
+      })
+
+      return globMatch
+    })
+
+    console.log('configFileRefChanges', configFileRefChanges)
+
+    // Detect changes to function handler files and their dependencies
     const handlerChanges = projectChanges.filter(file => {
-      return functionHandlers.some(handler => {
+      return functionDetails.some(handler => {
         const handlerPath = handler.file.replace(/\\/g, '/')
-        return file.includes(handlerPath) || file.startsWith(path.join(projectPath, handlerPath))
+        const fileMatches = file.includes(handlerPath) || file.startsWith(path.join(projectPath, handlerPath))
+
+        // Also check if any dependencies have changed
+        if (handler.dependencies && handler.dependencies.length > 0) {
+          const depMatches = handler.dependencies.some(dep => {
+            const relativeDep = path.relative(gitInfo.dir, dep)
+            return file === relativeDep || file.includes(relativeDep)
+          })
+          return fileMatches || depMatches
+        }
+
+        return fileMatches
       })
     })
 
@@ -135,8 +199,14 @@ async function detectServerlessChanges() {
       },
       packageJsonChanged: packageJsonChanges.length > 0,
       configChanged: configChanges.length > 0,
-      functionHandlers,
-      handlerChanges: handlerChanges.map(f => path.relative(projectPath, f))
+      configFileRefChanged: configFileRefChanges.length > 0,
+      functionDetails,
+      handlerChanges: handlerChanges.map(f => path.relative(projectPath, f)),
+      configFileRefChanges: {
+        modified: configFileRefChanges.filter(f => gitInfo.modifiedFiles.includes(f)).map(f => path.relative(projectPath, f)),
+        created: configFileRefChanges.filter(f => gitInfo.createdFiles.includes(f)).map(f => path.relative(projectPath, f)),
+        deleted: configFileRefChanges.filter(f => gitInfo.deletedFiles.includes(f)).map(f => path.relative(projectPath, f))
+      }
     })
   }
 
@@ -153,7 +223,7 @@ async function detectServerlessChanges() {
   changedProjects.forEach((project, index) => {
     console.log(`${index + 1}. 📦 ${project.name}`)
     console.log(`   Path: ${project.path}`)
-    console.log(`   Config: ${project.configFile}`)
+    console.log(`   Config: ${project.configFile}\n`)
     console.log(`   Files changed: ${project.totalChanges}`)
     console.log(`   • ${project.changes.modified.length} modified`)
     console.log(`   • ${project.changes.created.length} created`)
@@ -167,18 +237,39 @@ async function detectServerlessChanges() {
     if (project.configChanged) {
       console.log('   ⚠️  Serverless configuration changed')
     }
+    if (project.configFileRefChanged) {
+      console.log('   ⚠️  Config file references changed')
+      if (project.configFileRefChanges.modified.length > 0) {
+      console.log('       Modified:')
+        project.configFileRefChanges.modified.forEach(file => {
+          console.log(`        • ${file}`)
+        })
+      }
+      if (project.configFileRefChanges.created.length > 0) {
+      console.log('       Created:')
+        project.configFileRefChanges.created.forEach(file => {
+          console.log(`        • ${file}`)
+        })
+      }
+      if (project.configFileRefChanges.deleted.length > 0) {
+      console.log('       Deleted:')
+        project.configFileRefChanges.deleted.forEach(file => {
+          console.log(`        • ${file}`)
+        })
+      }
+    }
 
     // Function handlers
-    if (project.functionHandlers.length > 0) {
-      console.log(`\n   📝 Functions (${project.functionHandlers.length}):`)
-      project.functionHandlers.forEach(func => {
+    if (project.functionDetails.length > 0) {
+      console.log(`\n   📝  Functions (${project.functionDetails.length}):`)
+      project.functionDetails.forEach(func => {
         const isChanged = project.handlerChanges.some(change =>
           change.includes(func.file)
         )
         const changeIndicator = isChanged ? '🔄' : '  '
         console.log(`      ${changeIndicator} ${func.name}: ${func.handler}`)
         if (isChanged) {
-          console.log(`         File: ${func.file}`)
+        console.log(`         File: ${func.file}`)
         }
       })
     }
@@ -206,6 +297,19 @@ async function detectServerlessChanges() {
       console.log(`      • Validate: cd ${project.path} && serverless package`)
     }
 
+    if (project.configFileRefChanged) {
+      console.log(`      • Review config file reference changes`)
+      if (project.configFileRefChanges.modified.length > 0) {
+        console.log(`        Modified: ${project.configFileRefChanges.modified.join(', ')}`)
+      }
+      if (project.configFileRefChanges.created.length > 0) {
+        console.log(`        Created: ${project.configFileRefChanges.created.join(', ')}`)
+      }
+      if (project.configFileRefChanges.deleted.length > 0) {
+        console.log(`        Deleted: ${project.configFileRefChanges.deleted.join(', ')}`)
+      }
+    }
+
     console.log()
   })
 
@@ -213,7 +317,7 @@ async function detectServerlessChanges() {
   console.log('📋 Changed projects (JSON for CI/CD):')
   console.log(JSON.stringify(changedProjects.map(p => {
     // Filter to only include handlers that have actually changed
-    const changedHandlers = p.functionHandlers.filter(h =>
+    const changedHandlers = p.functionDetails.filter(h =>
       p.handlerChanges.some(change => change.includes(h.file))
     )
 
@@ -222,9 +326,11 @@ async function detectServerlessChanges() {
       path: p.path,
       packageJsonChanged: p.packageJsonChanged,
       configChanged: p.configChanged,
+      configFileRefChanged: p.configFileRefChanged,
       functionsChanged: p.handlerChanges.length,
       changedFunctions: changedHandlers.map(h => h.name),
-      handlers: changedHandlers
+      handlers: changedHandlers,
+      configFileRefChanges: p.configFileRefChanges
     }
   }), null, 2))
 }
@@ -291,14 +397,16 @@ function getServerlessConfigFile(dir) {
 }
 
 /**
- * Extract function handlers from serverless configuration file
+ * Extract function details from serverless configuration file including dependency paths
  */
-async function extractFunctionHandlers(configFile) {
+async function extractFunctionDetails(configFile) {
   if (!configFile || !fs.existsSync(configFile)) {
-    return []
+    return { functionDetails: [], configFileRefs: [], fileGlobPatterns: [] }
   }
 
   const handlers = []
+  const configFileRefs = []
+  const fileGlobPatterns = []
   const ext = path.extname(configFile)
 
   try {
@@ -310,8 +418,28 @@ async function extractFunctionHandlers(configFile) {
     console.log('configDetails', configDetails)
     const config = configDetails.config
     const metadata = configDetails.metadata
+    const resolutionHistory = configDetails.resolutionHistory
 
+    deepLog('configDetails.metadata.variables', metadata.variables)
+    deepLog('configDetails.resolutionHistory', resolutionHistory)
     console.log('serverless config', config)
+    console.log('serverless config.functions', config.functions)
+    // Extract file references from config metadata
+    if (metadata && metadata.resolvedFileRefs) {
+      const parentDir = path.dirname(configFile)
+      for (const fileRef of metadata.resolvedFileRefs) {
+        const absolutePath = path.resolve(parentDir, fileRef)
+        configFileRefs.push(absolutePath)
+      }
+    }
+
+    // Also extract glob patterns for checking against created/modified files
+    if (metadata && metadata.fileGlobPatterns) {
+      const parentDir = path.dirname(configFile)
+      for (const pattern of metadata.fileGlobPatterns) {
+        fileGlobPatterns.push({ pattern, baseDir: parentDir })
+      }
+    }
 
     // Extract function handlers from the parsed config
     if (config && config.functions) {
@@ -325,18 +453,25 @@ async function extractFunctionHandlers(configFile) {
           const parentDir = path.dirname(configFile)
           const fileName = handler.split('.')[0] + fileExt
           const handlerPath = path.resolve(parentDir, fileName)
-          console.log('parentDir', parentDir)
-          console.log('handlerPath', handlerPath)
-          const fileGraph = depGraph(handlerPath)
-          console.log('fileGraph', fileGraph)
-          const content = fs.readFileSync(handlerPath, 'utf8')
-          const dependencies = extractDeps(content)
-          console.log('dependencies', dependencies)
+
+          // console.log('parentDir', parentDir)
+          // console.log('handlerPath', handlerPath)
+
+          // Get all dependency paths using resolveDepPaths
+          let depPaths = []
+          try {
+            depPaths = resolveDepPaths(handlerPath, { verifyGraph: false })
+            console.log('depPaths', depPaths)
+          } catch (err) {
+            console.log(`Warning: Could not resolve dependencies for ${handlerPath}:`, err.message)
+          }
+
           handlers.push({
             name: functionName,
             ...(functionConfig.description ? { description: functionConfig.description } : {}),
             handler: handler,
-            file: handler.split('.')[0] + fileExt // Approximate file path
+            file: handler.split('.')[0] + fileExt, // Approximate file path
+            dependencies: depPaths
           })
         }
       }
@@ -345,7 +480,7 @@ async function extractFunctionHandlers(configFile) {
     console.error(`Error parsing ${configFile}:`, err.message)
   }
 
-  return handlers
+  return { functionDetails: handlers, configFileRefs, fileGlobPatterns }
 }
 
 // Run the detection

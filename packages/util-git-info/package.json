@@ -40,8 +40,9 @@
     "url": "https://github.com/DavidWells/components/tree/master/packages/util-git-info"
   },
   "devDependencies": {
+    "@davidwells/extract-deps": "^0.0.5",
     "@types/node": "^22.10.1",
-    "configorama": "^0.6.7",
+    "configorama": "^0.6.9",
     "typescript": "^5.7.2",
     "uvu": "^0.5.6"
   }
