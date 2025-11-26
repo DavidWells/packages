@@ -1,6 +1,7 @@
 const { executeCommand } = require('../utils/exec')
 const path = require('path')
 const { getGitRoot } = require('../getGitRoot')
+const { validateFilePath } = require('../utils/validateFilePath')
 
 /**
  * @typedef {Object} FileDateInfo
@@ -24,6 +25,13 @@ async function getFileModifiedDate(filePath, options = {}) {
   const cwd = options.cwd || process.cwd()
 
   return new Promise((resolve, reject) => {
+    // Validate file path to prevent command injection
+    try {
+      validateFilePath(filePath)
+    } catch (err) {
+      return reject(err)
+    }
+
     // Get most recent commit timestamp for the file
     const command = `git log -1 --pretty=format:%at --follow -- "${filePath}"`
 
@@ -62,6 +70,13 @@ async function getFileCreatedDate(filePath, options = {}) {
   const cwd = options.cwd || process.cwd()
 
   return new Promise((resolve, reject) => {
+    // Validate file path to prevent command injection
+    try {
+      validateFilePath(filePath)
+    } catch (err) {
+      return reject(err)
+    }
+
     // Get all commit timestamps following history, then take the last one (oldest)
     const command = `git log --follow --pretty=format:%at -- "${filePath}"`
 
@@ -105,6 +120,13 @@ async function getFileDates(filePath, options = {}) {
   const cwd = options.cwd || process.cwd()
 
   return new Promise((resolve, reject) => {
+    // Validate file path to prevent command injection
+    try {
+      validateFilePath(filePath)
+    } catch (err) {
+      return reject(err)
+    }
+
     // Get all commit timestamps following history
     const command = `git log --follow --pretty=format:%at -- "${filePath}"`
 
