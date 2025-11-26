@@ -41,8 +41,10 @@
   },
   "devDependencies": {
     "@davidwells/extract-deps": "^0.0.5",
+    "@davidwells/git-split-diffs": "file:./git-split-diffs-repo",
     "@types/node": "^22.10.1",
     "configorama": "^0.6.9",
+    "minimatch": "^10.0.1",
     "typescript": "^5.7.2",
     "uvu": "^0.5.6"
   }

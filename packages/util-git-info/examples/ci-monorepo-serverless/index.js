@@ -1,166 +1,14 @@
 const path = require('path')
 const fs = require('fs')
-const util = require('util')
 const configorama = require('configorama')
 const { gitDetails } = require('../../src')
 const { extractDeps } = require('@davidwells/extract-deps')
 const { resolveDepPaths } = require('@davidwells/extract-deps/dep-graph')
 const { getFormattedDiff } = require('../../src/git/getDiffFormatted')
-
-function logValue(value, isFirst, isLast) {
-  const prefix = `${isFirst ? '> ' : ''}`
-  if (typeof value === 'object') {
-    console.log(`${util.inspect(value, false, null, true)}\n`)
-    return
-  }
-  if (isFirst) {
-    console.log(`\n\x1b[33m${prefix}${value}\x1b[0m`)
-    return
-  }
-  console.log((typeof value === 'string' && value.includes('\n')) ? `\`${value}\`` : value)
-  // isLast && console.log(`\x1b[37m\x1b[1m${'─'.repeat(94)}\x1b[0m\n`)
-}
-
-function deepLog() {
-  for (let i = 0; i < arguments.length; i++) logValue(arguments[i], i === 0, i === arguments.length - 1)
-}
-
-/**
- * Deployment strategy rules
- * Maps config change paths to the type of deployment required
- */
-const deploymentStrategyRules = {
-  // Fast SDK updates - Lambda configuration only (~5 seconds)
-  fastSdkUpdate: [
-    'functions.*.environment',          // Environment variables
-    'functions.*.environment.*',        // Individual env var changes
-    'functions.*.env',                  // Function-level env (Serverless shorthand)
-    'functions.*.env.*',                // Individual function-level env var changes
-    'functions.*.memorySize',           // Memory allocation
-    'functions.*.timeout',              // Timeout value
-    'functions.*.layers',               // Lambda layers
-    'functions.*.vpc',                  // VPC configuration
-    'functions.*.tracing',              // X-Ray tracing mode
-    'functions.*.reservedConcurrency',  // Reserved concurrent executions
-    'functions.*.description',          // Function description
-  ],
-
-  // Full deploy required - affects CloudFormation resources (~60+ seconds)
-  fullDeploy: [
-    'functions.*.events',               // Any event configuration changes
-    'functions.*.events.*',             // Individual event changes
-    'functions.*.handler',              // Handler changes (usually with code)
-    'functions.*.runtime',              // Runtime changes
-    'functions.*.role',                 // IAM role changes
-    'functions.*.iamRoleStatements',    // IAM policy changes
-    'provider.*',                       // Provider-level changes
-    'service.*',                        // Service-level changes
-  ]
-}
-
-/**
- * Match a change path against a pattern with wildcards
- */
-function matchesPathPattern(path, pattern) {
-  const regexPattern = pattern
-    .split('.')
-    .map(part => part === '*' ? '[^.]+' : part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('\\.')
-  const regex = new RegExp(`^${regexPattern}$`)
-  return regex.test(path)
-}
-
-/**
- * Determine the deployment strategy required for a specific change
- */
-function getDeploymentStrategy(changePath) {
-  // Check fullDeploy patterns first (more restrictive)
-  for (const pattern of deploymentStrategyRules.fullDeploy) {
-    if (matchesPathPattern(changePath, pattern)) {
-      return 'fullDeploy'
-    }
-  }
-
-  // Check fastSdkUpdate patterns
-  for (const pattern of deploymentStrategyRules.fastSdkUpdate) {
-    if (matchesPathPattern(changePath, pattern)) {
-      return 'fastSdkUpdate'
-    }
-  }
-
-  // Unknown change type - default to full deploy for safety
-  return 'fullDeploy'
-}
-
-/**
- * Categorize config file reference changes by deployment strategy
- * Maps changed files → variable paths → deployment strategy
- */
-function categorizeConfigChanges(changedFiles, metadata, gitInfo, configFile) {
-  const categorized = {
-    fastSdkUpdate: [],
-    fullDeploy: [],
-    unknown: []
-  }
-
-  if (!metadata || !metadata.variables || changedFiles.length === 0) {
-    return categorized
-  }
-
-  const parentDir = path.dirname(configFile)
-
-  // Map each changed file to the variables that reference it
-  for (const changedFile of changedFiles) {
-    const absoluteChangedFile = path.isAbsolute(changedFile)
-      ? changedFile
-      : path.join(gitInfo.dir, changedFile)
-
-    // Check each variable to see if it references this changed file
-    for (const [variableString, variableInstances] of Object.entries(metadata.variables)) {
-      // Check if this variable references a file
-      if (!variableString.includes('${file(')) continue
-
-      for (const instance of variableInstances) {
-        const configPath = instance.path
-
-        // Check if any resolve details reference the changed file
-        const referencesChangedFile = instance.resolveDetails?.some(detail => {
-          if (detail.varType && detail.varType.startsWith('file(')) {
-            // Extract the file path from the varType
-            const match = detail.varType.match(/file\(([^)]+)\)/)
-            if (match) {
-              const referencedFile = match[1]
-              const absoluteRef = path.resolve(parentDir, referencedFile)
-              return absoluteRef === absoluteChangedFile ||
-                     path.relative(gitInfo.dir, absoluteRef) === changedFile
-            }
-          }
-          return false
-        })
-
-        if (referencesChangedFile) {
-          const strategy = getDeploymentStrategy(configPath)
-          const changeInfo = {
-            file: changedFile,
-            variable: variableString,
-            configPath: configPath,
-            strategy: strategy
-          }
-
-          if (strategy === 'fastSdkUpdate') {
-            categorized.fastSdkUpdate.push(changeInfo)
-          } else if (strategy === 'fullDeploy') {
-            categorized.fullDeploy.push(changeInfo)
-          } else {
-            categorized.unknown.push(changeInfo)
-          }
-        }
-      }
-    }
-  }
-
-  return categorized
-}
+const { getDeploymentStrategy } = require('./utils/deployment-strategy')
+const { analyzeConfigChanges } = require('./utils/config-diff')
+const { categorizeConfigFileRefChanges } = require('./utils/file-ref-categorizer')
+const { deepLog } = require('./utils/deep-log')
 
 
 function displayGitDiff({ filePath, gitInfo }) {
@@ -284,7 +132,8 @@ async function detectServerlessChanges() {
       functionDetails,
       configFileRefs,
       fileGlobPatterns,
-      metadata
+      metadata,
+      currentConfig
     } = await extractFunctionDetails(configFile)
 
     /*
@@ -322,8 +171,165 @@ async function detectServerlessChanges() {
     console.log('configFileRefChanges', configFileRefChanges)
 
     // Categorize config file ref changes by deployment strategy
-    const categorizedChanges = categorizeConfigChanges(configFileRefChanges, metadata, gitInfo, configFile)
+    const categorizedChanges = categorizeConfigFileRefChanges(configFileRefChanges, metadata, gitInfo, configFile)
     console.log('categorizedChanges', categorizedChanges)
+
+    // If the serverless config file itself changed, analyze WHAT changed
+    let configDiff = null
+    if (configChanges.length > 0 && currentConfig) {
+      // Try to get previous version of config file for comparison
+      const configFilePath = path.relative(gitInfo.dir, configFile)
+
+      try {
+        // Get previous version of config file from git
+        const { execSync } = require('child_process')
+        const previousConfigContent = execSync(`git show HEAD:${configFilePath}`, {
+          cwd: gitInfo.dir,
+          encoding: 'utf8'
+        })
+
+        // Write previous config to temp file next to the original config
+        // This ensures relative ${file(...)} references can still resolve
+        const ext = path.extname(configFile)
+        const configDir = path.dirname(configFile)
+        const tmpFile = path.join(configDir, `.serverless-prev-${Date.now()}${ext}`)
+        fs.writeFileSync(tmpFile, previousConfigContent)
+
+        // Also checkout previous versions of any config file refs (like env.yml)
+        // so configorama can resolve ${file(...)} references from the old commit
+        const tmpRefFiles = []
+        if (configFileRefChanges.length > 0) {
+          for (const refFileRelative of configFileRefChanges) {
+            try {
+              //
+              const previousRefContent = execSync(`git show HEAD:${refFileRelative}`, {
+                cwd: gitInfo.dir,
+                encoding: 'utf8'
+              })
+
+              console.log('previousRefContent', previousRefContent)
+
+              // Convert to absolute path for writing temp file
+              const refFileAbsolute = path.join(gitInfo.dir, refFileRelative)
+              const refFileDir = path.dirname(refFileAbsolute)
+              const refFileName = path.basename(refFileAbsolute)
+              const tmpRefFile = path.join(refFileDir, `.${refFileName}-prev-${Date.now()}`)
+              console.log('tmpRefFile', tmpRefFile)
+              fs.writeFileSync(tmpRefFile, previousRefContent)
+              // TODO need to replace the ${file refs in the previousRefConfig before configorama resolution
+
+              /*
+              // We do have the content
+              previousRefContent TABLE_NAME: api-service-dev-table
+
+              // it gets saved here
+              tmpRefFile /public-packages/packages/util-git-info/tests/fixtures/monorepo/service-api/.env.yml-prev-1764181922691
+              tempFileContents service: api-service
+
+              // But when configorama tries to resolve it, it fails because old path
+              Unable to resolve configuration variable
+
+              Value  "${file(./env.yml):TABLE_NAME}"
+              From   "${file(./env.yml):TABLE_NAME}"
+              At location "functions.getUsers.env.TABLE_NAME" in /public-packages/packages/util-git-info/tests/fixtures/monorepo/service-api/.serverless-prev-1764181922670.yml
+
+              Fix this reference, your inputs and/or provide a valid fallback value.
+
+              Example of setting a fallback value: ${file(./env.yml):TABLE_NAME, "fallbackValue"}
+
+              */
+
+              tmpRefFiles.push({
+                tmpPath: tmpRefFile,
+                originalPath: refFileAbsolute,
+              })
+            } catch (refError) {
+              // Ref file might not exist in previous commit (newly created)
+              console.log(`  Could not get previous version of ${refFileRelative}:`, refError.message)
+            }
+          }
+        }
+
+        let previousConfig = null
+        let currentConfig = null
+
+        try {
+          // Try to parse with configorama to get original (unresolved) configs
+          try {
+            const tempFileContents = fs.readFileSync(tmpFile, 'utf8')
+            console.log('tempFileContents', tempFileContents)
+            const previousDetails = await configorama(tmpFile, {
+              returnMetadata: true,
+              ignoreUnresolved: true
+            })
+            const currentDetails = await configorama(configFile, { returnMetadata: true })
+            console.log('previousDetails', previousDetails)
+            // Use originalConfig (before variable resolution) for comparison
+            previousConfig = previousDetails.originalConfig
+            currentConfig = currentDetails.originalConfig
+          } catch (configoramaError) {
+            console.log('configoramaError', configoramaError)
+            // Configorama failed (likely unresolved variable with no fallback)
+            // Fall back to raw YAML/JSON parsing for YAML/JSON files
+            if (ext === '.yml' || ext === '.yaml') {
+              const yaml = require('js-yaml')
+              previousConfig = yaml.load(previousConfigContent)
+              const currentConfigContent = fs.readFileSync(configFile, 'utf8')
+              currentConfig = yaml.load(currentConfigContent)
+            } else if (ext === '.json') {
+              previousConfig = JSON.parse(previousConfigContent)
+              const currentConfigContent = fs.readFileSync(configFile, 'utf8')
+              currentConfig = JSON.parse(currentConfigContent)
+            } else {
+              // For JS/TS files, we need configorama - can't fall back
+              throw configoramaError
+            }
+          }
+        } finally {
+          // Clean up temp files
+          if (fs.existsSync(tmpFile)) {
+            fs.unlinkSync(tmpFile)
+          }
+          for (const { tmpPath } of tmpRefFiles) {
+            if (fs.existsSync(tmpPath)) {
+              fs.unlinkSync(tmpPath)
+            }
+          }
+        }
+
+        if (previousConfig && currentConfig) {
+          // Compare the unresolved configs
+          configDiff = analyzeConfigChanges(previousConfig, currentConfig)
+          console.log('configDiff', configDiff)
+
+          // Merge into categorizedChanges
+          if (configDiff.fastSdkUpdate.length > 0) {
+            categorizedChanges.fastSdkUpdate.push(...configDiff.fastSdkUpdate)
+          }
+          if (configDiff.fullDeploy.length > 0) {
+            categorizedChanges.fullDeploy.push(...configDiff.fullDeploy)
+          }
+          if (configDiff.unknown.length > 0) {
+            categorizedChanges.unknown.push(...configDiff.unknown)
+          }
+        } else {
+          // Couldn't parse configs
+          categorizedChanges.fullDeploy.push({
+            file: configFilePath,
+            reason: 'Serverless configuration file changed (could not parse)',
+            strategy: 'fullDeploy'
+          })
+        }
+      } catch (error) {
+        // Couldn't get/parse previous version - default to fullDeploy
+        console.log('  Could not analyze config diff:', error.message)
+        categorizedChanges.fullDeploy.push({
+          file: configFilePath,
+          reason: 'Serverless configuration file changed (new or could not get previous version)',
+          strategy: 'fullDeploy'
+        })
+      }
+    }
 
     // Detect changes to function handler files and their dependencies
     const handlerChanges = projectChanges.filter(file => {
@@ -615,14 +621,13 @@ async function detectServerlessChanges() {
     return {
       name: p.name,
       path: p.path,
-      packageJsonChanged: p.packageJsonChanged,
-      configChanged: p.configChanged,
-      configFileRefChanged: p.configFileRefChanged,
-      functionsChanged: p.handlerChanges.length,
-      changedFunctions: changedHandlers.map(h => h.name),
-      handlers: changedHandlers,
-      configFileRefChanges: p.configFileRefChanges,
-      deploymentStrategy: p.deploymentStrategy
+      hasFunctionChanges: p.handlerChanges.length > 0,
+      hasConfigChanges: p.configChanged,
+      hasConfigRefChanges: p.configFileRefChanged,
+      hasPackageJsonChanges: p.packageJsonChanged,
+      changedFunctions: changedHandlers,
+      changedConfigFileRefs: p.configFileRefChanges,
+      deploymentStrategies: p.deploymentStrategy
     }
   }), null, 2))
 }
@@ -693,13 +698,14 @@ function getServerlessConfigFile(dir) {
  */
 async function extractFunctionDetails(configFile) {
   if (!configFile || !fs.existsSync(configFile)) {
-    return { functionDetails: [], configFileRefs: [], fileGlobPatterns: [], metadata: null }
+    return { functionDetails: [], configFileRefs: [], fileGlobPatterns: [], metadata: null, currentConfig: null }
   }
 
   const handlers = []
   const configFileRefs = []
   const fileGlobPatterns = []
   let metadata = null
+  let config = null
   const ext = path.extname(configFile)
 
   try {
@@ -709,7 +715,7 @@ async function extractFunctionDetails(configFile) {
       returnMetadata: true
     })
     // console.log('configDetails', configDetails)
-    const config = configDetails.config
+    config = configDetails.config
     metadata = configDetails.metadata
     const resolutionHistory = configDetails.resolutionHistory
 
@@ -723,6 +729,7 @@ async function extractFunctionDetails(configFile) {
     // Extract file references from config metadata
     if (metadata && metadata.resolvedFileRefs) {
       const parentDir = path.dirname(configFile)
+      console.log('metadata.resolvedFileRefs for', configFile, ':', metadata.resolvedFileRefs)
       for (const fileRef of metadata.resolvedFileRefs) {
         const absolutePath = path.resolve(parentDir, fileRef)
         configFileRefs.push(absolutePath)
@@ -732,6 +739,7 @@ async function extractFunctionDetails(configFile) {
     // Also extract glob patterns for checking against created/modified files
     if (metadata && metadata.fileGlobPatterns) {
       const parentDir = path.dirname(configFile)
+      console.log('metadata.fileGlobPatterns for', configFile, ':', metadata.fileGlobPatterns)
       for (const pattern of metadata.fileGlobPatterns) {
         fileGlobPatterns.push({ pattern, baseDir: parentDir })
       }
@@ -774,9 +782,11 @@ async function extractFunctionDetails(configFile) {
     }
   } catch (err) {
     console.error(`Error parsing ${configFile}:`, err.message)
+    // fail hard if we can't parse the config file
+    process.exit(1)
   }
 
-  return { functionDetails: handlers, configFileRefs, fileGlobPatterns, metadata }
+  return { functionDetails: handlers, configFileRefs, fileGlobPatterns, metadata, currentConfig: config }
 }
 
 // Run the detection

@@ -1,4 +1,4 @@
-const { gitDetails } = require('../src')
+const { gitDetails } = require('../../src')
 
 /**
  * Detects changed packages in CI environments (GitHub Actions, etc.)
@@ -125,8 +125,8 @@ async function detectChangedPackagesInCI() {
     const hasSrcChanges = [...files.modified, ...files.created].some(f => f.includes('/src/'))
 
     if (hasPackageJson) console.log('   ⚠️  Dependencies changed')
-    if (hasSrcChanges) console.log('   📝 Source code changed')
-    if (hasTests) console.log('   ✅ Tests updated')
+    if (hasSrcChanges)  console.log('   📝  Source code changed')
+    if (hasTests) console.log('   ✅  Tests updated')
     if (hasSrcChanges && !hasTests) console.log('   ⚠️  Consider updating tests')
 
     console.log()

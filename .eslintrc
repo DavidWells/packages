@@ -30,6 +30,9 @@
         "destructuredArrayIgnorePattern": "^_"
       }
     ],
+    "spaced-comment": 0,
+    "quotes": 0,
+    "no-multi-spaces": 0,
     "prefer/const": 0,
     "comma-dangle" : [0, "always-multiline"],
     "space-before-function-paren": 0,
