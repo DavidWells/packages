@@ -147,6 +147,40 @@ if (mdFiles.edited) {
 }
 ```
 
+### Getting File Creation and Modification Dates
+
+Get git timestamps for when files were created and last modified:
+
+```js
+const { getFileDates, getFileModifiedDate, getFileCreatedDate } = require('git-er-done')
+
+// Get both dates efficiently (recommended)
+const dates = await getFileDates('src/index.js')
+console.log('Created:', dates.createdDate)
+console.log('Modified:', dates.modifiedDate)
+console.log('Created timestamp:', dates.created) // Unix timestamp in seconds
+console.log('Modified timestamp:', dates.modified) // Unix timestamp in seconds
+
+// Or get just modified date
+const modifiedTimestamp = await getFileModifiedDate('README.md')
+console.log('Last modified:', new Date(modifiedTimestamp * 1000))
+
+// Or get just created date
+const createdTimestamp = await getFileCreatedDate('README.md')
+console.log('First committed:', new Date(createdTimestamp * 1000))
+
+// Get dates for multiple files
+const { getMultipleFileDates } = require('git-er-done')
+const files = ['README.md', 'package.json', 'src/index.js']
+const fileDates = await getMultipleFileDates(files)
+
+for (const [file, info] of Object.entries(fileDates)) {
+  if (!info.error) {
+    console.log(`${file}: last modified ${info.modifiedDate.toISOString()}`)
+  }
+}
+```
+
 ### Getting Detailed File Information
 
 The `fileMatch` function returns detailed information about matched files:
@@ -178,6 +212,7 @@ Check out the [`examples`](./examples) directory for more use cases:
 - [`get-all-commits.js`](./examples/get-all-commits.js) - Retrieve and display all commits
 - [`get-git-files.js`](./examples/get-git-files.js) - Get list of all git-tracked files
 - [`get-specific-commit-info.js`](./examples/get-specific-commit-info.js) - Get detailed information about a specific commit
+- [`get-file-dates.js`](./examples/get-file-dates.js) - Get creation and modification dates for files
 
 ### File Change Detection
 - [`detect-file-changes.js`](./examples/detect-file-changes.js) - Detect specific file changes between commits
