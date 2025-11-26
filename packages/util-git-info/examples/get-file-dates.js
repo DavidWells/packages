@@ -1,8 +1,7 @@
 const {
-  getFileModifiedDate,
-  getFileCreatedDate,
-  getFileDates,
-  getMultipleFileDates
+  getFileModifiedTimeStamp,
+  getFileCreatedTimeStamp,
+  getFileDates
 } = require('../src/index')
 
 async function main() {
@@ -11,7 +10,7 @@ async function main() {
   // Example 1: Get modified date only
   console.log('1. Get modified date for README.md:')
   try {
-    const modifiedTimestamp = await getFileModifiedDate('README.md')
+    const modifiedTimestamp = await getFileModifiedTimeStamp('README.md')
     const modifiedDate = new Date(modifiedTimestamp * 1000)
     console.log(`   Modified: ${modifiedDate.toISOString()}`)
     console.log(`   Timestamp: ${modifiedTimestamp}\n`)
@@ -22,7 +21,7 @@ async function main() {
   // Example 2: Get created date only
   console.log('2. Get created date for README.md:')
   try {
-    const createdTimestamp = await getFileCreatedDate('README.md')
+    const createdTimestamp = await getFileCreatedTimeStamp('README.md')
     const createdDate = new Date(createdTimestamp * 1000)
     console.log(`   Created: ${createdDate.toISOString()}`)
     console.log(`   Timestamp: ${createdTimestamp}\n`)
@@ -45,7 +44,7 @@ async function main() {
   console.log('4. Get dates for multiple files:')
   try {
     const files = ['README.md', 'package.json', 'src/index.js']
-    const dates = await getMultipleFileDates(files)
+    const dates = await getFileDates(files)
 
     for (const [file, info] of Object.entries(dates)) {
       if (info.error) {

@@ -4,6 +4,19 @@
   "description": "Utility for dealing with modified, created, deleted files since a git commit",
   "main": "src/index.js",
   "types": "types/index.d.ts",
+  "exports": {
+    ".": "./src/index.js",
+    "./get-commit": "./src/git/commits/getCommit.js",
+    "./get-all-commits": "./src/git/commits/getAllCommits.js",
+    "./get-first-commit": "./src/git/commits/getFirstCommit.js",
+    "./get-last-commit": "./src/git/commits/getLastCommit.js",
+    "./get-details": "./src/git/getDetails.js",
+    "./get-root": "./src/git/getGitRoot.js",
+    "./get-files": "./src/git/getGitFiles.js",
+    "./get-file-at-commit": "./src/git/getFileAtCommit.js",
+    "./get-file-dates": "./src/git/dates/getFileDates.js",
+    "./get-remotes": "./src/git/remotes/getRemotes.js"
+  },
   "scripts": {
     "test": "uvu . \\.test\\.js$",
     "check": "tsc --noEmit",

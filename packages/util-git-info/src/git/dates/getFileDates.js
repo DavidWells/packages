@@ -12,16 +12,21 @@ const { validateFilePath } = require('../utils/validateFilePath')
  */
 
 /**
+ * @typedef {Object} FileDateError
+ * @property {string} error - Error message when file date retrieval fails
+ */
+
+/**
  * Gets the last modification date of a file from git history
  * @param {string} filePath - Path to the file (absolute or relative to git root)
  * @param {Object} [options] - Options
  * @param {string} [options.cwd] - Current working directory (defaults to process.cwd())
  * @returns {Promise<number>} Promise that resolves to Unix timestamp (seconds) of last modification
  * @example
- * const modifiedDate = await getFileModifiedDate('src/index.js')
+ * const modifiedDate = await getFileModifiedTimeStamp('src/index.js')
  * console.log('Last modified:', new Date(modifiedDate * 1000))
  */
-async function getFileModifiedDate(filePath, options = {}) {
+async function getFileModifiedTimeStamp(filePath, options = {}) {
   const cwd = options.cwd || process.cwd()
 
   return new Promise((resolve, reject) => {
@@ -63,10 +68,10 @@ async function getFileModifiedDate(filePath, options = {}) {
  * @param {string} [options.cwd] - Current working directory (defaults to process.cwd())
  * @returns {Promise<number>} Promise that resolves to Unix timestamp (seconds) of creation
  * @example
- * const createdDate = await getFileCreatedDate('src/index.js')
+ * const createdDate = await getFileCreatedTimeStamp('src/index.js')
  * console.log('Created:', new Date(createdDate * 1000))
  */
-async function getFileCreatedDate(filePath, options = {}) {
+async function getFileCreatedTimeStamp(filePath, options = {}) {
   const cwd = options.cwd || process.cwd()
 
   return new Promise((resolve, reject) => {
@@ -104,19 +109,13 @@ async function getFileCreatedDate(filePath, options = {}) {
 }
 
 /**
- * Gets both creation and modification dates for a file from git history
- * @param {string} filePath - Path to the file (absolute or relative to git root)
+ * Gets dates for a single file (internal helper)
+ * @param {string} filePath - Path to the file
  * @param {Object} [options] - Options
- * @param {string} [options.cwd] - Current working directory (defaults to process.cwd())
- * @returns {Promise<FileDateInfo>} Promise that resolves to object with created and modified timestamps
- * @example
- * const dates = await getFileDates('src/index.js')
- * console.log('Created:', dates.createdDate)
- * console.log('Modified:', dates.modifiedDate)
- * console.log('Created timestamp:', dates.created)
- * console.log('Modified timestamp:', dates.modified)
+ * @param {string} [options.cwd] - Current working directory
+ * @returns {Promise<FileDateInfo>}
  */
-async function getFileDates(filePath, options = {}) {
+async function getSingleFileDates(filePath, options = {}) {
   const cwd = options.cwd || process.cwd()
 
   return new Promise((resolve, reject) => {
@@ -159,23 +158,35 @@ async function getFileDates(filePath, options = {}) {
 }
 
 /**
- * Gets modification dates for multiple files efficiently
- * @param {string[]} filePaths - Array of file paths
+ * Gets both creation and modification dates for file(s) from git history
+ * @param {string | string[]} filePaths - Path or array of paths to file(s)
  * @param {Object} [options] - Options
  * @param {string} [options.cwd] - Current working directory (defaults to process.cwd())
- * @returns {Promise<Object<string, FileDateInfo>>} Promise that resolves to object mapping file paths to their date info
+ * @returns {Promise<FileDateInfo | Object<string, FileDateInfo | FileDateError>>} Single file returns FileDateInfo, multiple files returns object keyed by path
  * @example
- * const dates = await getMultipleFileDates(['src/index.js', 'README.md'])
+ * // Single file
+ * const dates = await getFileDates('src/index.js')
+ * console.log('Created:', dates.createdDate)
+ * console.log('Modified:', dates.modifiedDate)
+ *
+ * // Multiple files
+ * const dates = await getFileDates(['src/index.js', 'README.md'])
  * console.log('Index modified:', dates['src/index.js'].modifiedDate)
  */
-async function getMultipleFileDates(filePaths, options = {}) {
+async function getFileDates(filePaths, options = {}) {
+  // Single file path
+  if (typeof filePaths === 'string') {
+    return getSingleFileDates(filePaths, options)
+  }
+
+  // Multiple file paths
+  /** @type {Object<string, FileDateInfo | FileDateError>} */
   const results = {}
 
-  // Process files in parallel
   await Promise.all(
     filePaths.map(async (filePath) => {
       try {
-        results[filePath] = await getFileDates(filePath, options)
+        results[filePath] = await getSingleFileDates(filePath, options)
       } catch (err) {
         // Store error but don't fail entire operation
         results[filePath] = { error: err.message }
@@ -187,8 +198,7 @@ async function getMultipleFileDates(filePaths, options = {}) {
 }
 
 module.exports = {
-  getFileModifiedDate,
-  getFileCreatedDate,
-  getFileDates,
-  getMultipleFileDates
+  getFileModifiedTimeStamp,
+  getFileCreatedTimeStamp,
+  getFileDates
 }

@@ -152,7 +152,7 @@ if (mdFiles.edited) {
 Get git timestamps for when files were created and last modified:
 
 ```js
-const { getFileDates, getFileModifiedDate, getFileCreatedDate } = require('git-er-done')
+const { getFileDates, getFileModifiedTimeStamp, getFileCreatedTimeStamp } = require('git-er-done')
 
 // Get both dates efficiently (recommended)
 const dates = await getFileDates('src/index.js')
@@ -162,17 +162,16 @@ console.log('Created timestamp:', dates.created) // Unix timestamp in seconds
 console.log('Modified timestamp:', dates.modified) // Unix timestamp in seconds
 
 // Or get just modified date
-const modifiedTimestamp = await getFileModifiedDate('README.md')
+const modifiedTimestamp = await getFileModifiedTimeStamp('README.md')
 console.log('Last modified:', new Date(modifiedTimestamp * 1000))
 
 // Or get just created date
-const createdTimestamp = await getFileCreatedDate('README.md')
+const createdTimestamp = await getFileCreatedTimeStamp('README.md')
 console.log('First committed:', new Date(createdTimestamp * 1000))
 
-// Get dates for multiple files
-const { getMultipleFileDates } = require('git-er-done')
+// Get dates for multiple files (pass an array)
 const files = ['README.md', 'package.json', 'src/index.js']
-const fileDates = await getMultipleFileDates(files)
+const fileDates = await getFileDates(files)
 
 for (const [file, info] of Object.entries(fileDates)) {
   if (!info.error) {
@@ -202,6 +201,70 @@ console.log('All edited test files:', testFiles.editedFiles)
 if (testFiles.edited) {
   console.log('Tests have been modified - run test suite')
 }
+```
+
+### Getting Git Root Directory
+
+```js
+const { getGitRoot } = require('git-er-done')
+
+const root = await getGitRoot()
+console.log('Git root:', root) // '/Users/you/your-repo'
+```
+
+### Getting File Contents at a Specific Commit
+
+Retrieve the contents of a file as it existed at a specific commit:
+
+```js
+const { getFileAtCommit } = require('git-er-done')
+
+// Get file contents from previous commit
+const previousVersion = await getFileAtCommit('src/index.js', 'HEAD~1')
+console.log('Previous version:', previousVersion)
+
+// Get file at specific SHA
+const oldVersion = await getFileAtCommit('package.json', 'abc123')
+
+// With cwd option for running in a different directory
+const contents = await getFileAtCommit('src/app.js', 'main', {
+  cwd: '/path/to/other/repo'
+})
+```
+
+### Getting Git Remotes
+
+```js
+const { getRemotes, getRemote } = require('git-er-done')
+
+// Get all remotes
+const remotes = await getRemotes()
+console.log('All remotes:', Object.keys(remotes)) // ['origin', 'upstream']
+console.log('Origin URL:', remotes.origin.url)
+
+// Get a specific remote
+const origin = await getRemote('origin')
+console.log('Origin:', origin)
+// { name: 'origin', url: 'git@github.com:user/repo.git', fetchUrl: '...', pushUrl: '...' }
+```
+
+### Subpath Exports
+
+Import only what you need for smaller bundles:
+
+```js
+// Individual imports
+const { getCommit } = require('git-er-done/get-commit')
+const { getAllCommits } = require('git-er-done/get-all-commits')
+const { getFirstCommit } = require('git-er-done/get-first-commit')
+const { getLastCommit } = require('git-er-done/get-last-commit')
+const { gitDetails } = require('git-er-done/get-details')
+const { getGitRoot } = require('git-er-done/get-root')
+const { getGitFiles } = require('git-er-done/get-files')
+const { getFileAtCommit } = require('git-er-done/get-file-at-commit')
+const { getFileDates, getFileModifiedTimeStamp, getFileCreatedTimeStamp } = require('git-er-done/get-file-dates')
+const { getRemotes, getRemote } = require('git-er-done/get-remotes')
+```
 
 ## Examples
 

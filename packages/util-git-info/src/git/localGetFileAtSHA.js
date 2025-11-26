@@ -1,16 +1,25 @@
+// Gets file contents at a specific git SHA
 const { debug } = require('../debug')
 const { exec } = require('child_process')
 
 const d = debug('localGetFileAtSHA')
 
-const localGetFileAtSHA = (path, _repo, sha) => {
+/**
+ * Gets file contents at a specific git commit (internal)
+ * @param {string} path - File path relative to git root
+ * @param {string|null} _repo - Unused, kept for interface compatibility
+ * @param {string} sha - Git commit SHA or ref
+ * @param {Object} [options] - Options
+ * @param {string} [options.cwd] - Working directory (defaults to process.cwd())
+ * @returns {Promise<string|undefined>} File contents or undefined if not found
+ */
+const localGetFileAtSHA = (path, _repo, sha, options = {}) => {
+  const cwd = options.cwd || process.cwd()
   return new Promise(resolve => {
     const call = `git show ${sha}:'${path}'`
     d(call)
-    exec(call, (err, stdout, _stderr) => {
+    exec(call, { cwd }, (err, stdout, _stderr) => {
       if (err) {
-        // console.error(`Could not get the file ${path} from git at ${sha}`)
-        // console.error(err)
         return resolve()
       }
       resolve(stdout)
