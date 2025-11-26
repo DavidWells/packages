@@ -47,4 +47,12 @@
  * @property {function(): Promise<number>} linesOfCode - Async function that returns total lines of code changed
  */
 
+/**
+ * @typedef {Object} FileDateInfo
+ * @property {number} created - Unix timestamp (seconds) of when the file was first committed
+ * @property {number} modified - Unix timestamp (seconds) of when the file was last modified
+ * @property {Date} createdDate - JavaScript Date object of creation time
+ * @property {Date} modifiedDate - JavaScript Date object of last modification
+ */
+
 module.exports = {}
