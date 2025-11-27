@@ -10,6 +10,27 @@ Utility for dealing with modified, created, deleted files since a git commit.
 npm install git-er-done
 ```
 
+## Features
+
+- **Programmatic API** - Check for file changes, get commit info, and more
+- **CLI Tools** - `exit-if-diff` and `run-if-diff` for conditional execution
+- **Flexible Filtering** - Filter by file patterns and change types
+- **CI/CD Ready** - Perfect for monorepo deployments and conditional workflows
+
+## CLI Tools
+
+This package includes command-line utilities for conditional execution based on git changes:
+
+```bash
+# Exit with specific code if files changed
+exit-if-diff --since main --file-path "src/**"
+
+# Run command only if files changed
+run-if-diff --since main --file-path "src/**" -- npm test
+```
+
+See [CLI.md](./CLI.md) for complete CLI documentation.
+
 ## Usage
 
 ### Basic Usage
@@ -248,6 +269,46 @@ console.log('Origin:', origin)
 // { name: 'origin', url: 'git@github.com:user/repo.git', fetchUrl: '...', pushUrl: '...' }
 ```
 
+### Checking for Differences
+
+Use `checkDiff` to programmatically check for file changes with filtering:
+
+```js
+const { checkDiff } = require('git-er-done')
+
+// Check for any changes since a ref
+const result = await checkDiff({ since: 'main' })
+console.log(`${result.count} files changed`)
+console.log('Added:', result.added)
+console.log('Modified:', result.modified)
+console.log('Deleted:', result.deleted)
+
+// Filter by file path patterns
+const jsChanges = await checkDiff({
+  since: 'HEAD~5',
+  filePath: '**/*.js'
+})
+
+// Filter by change type
+const modifiedOnly = await checkDiff({
+  since: 'main',
+  fileStatus: 'modified'
+})
+
+// Combine filters
+const srcChanges = await checkDiff({
+  since: 'main',
+  filePath: 'src/**/*.js',
+  fileStatus: ['modified', 'added']
+})
+
+// Use in conditional logic
+if (srcChanges.count > 0) {
+  console.log('Source files changed, running build...')
+  // Run build
+}
+```
+
 ### Subpath Exports
 
 Import only what you need for smaller bundles:
@@ -264,6 +325,7 @@ const { getGitFiles } = require('git-er-done/get-files')
 const { getFileAtCommit } = require('git-er-done/get-file-at-commit')
 const { getFileDates, getFileModifiedTimeStamp, getFileCreatedTimeStamp } = require('git-er-done/get-file-dates')
 const { getRemotes, getRemote } = require('git-er-done/get-remotes')
+const { checkDiff } = require('git-er-done/check-diff')
 ```
 
 ## Examples
@@ -280,6 +342,7 @@ Check out the [`examples`](./examples) directory for more use cases:
 ### File Change Detection
 - [`detect-file-changes.js`](./examples/detect-file-changes.js) - Detect specific file changes between commits
 - [`file-match-patterns.js`](./examples/file-match-patterns.js) - Comprehensive guide to file matching patterns
+- [`check-diff.js`](./examples/check-diff.js) - Check for differences with filtering options
 
 ### Statistics & Analysis
 - [`get-lines-of-code-changed.js`](./examples/get-lines-of-code-changed.js) - Calculate lines of code changed
