@@ -4,6 +4,10 @@
   "description": "Utility for dealing with modified, created, deleted files since a git commit",
   "main": "src/index.js",
   "types": "types/index.d.ts",
+  "bin": {
+    "exit-if-diff": "./bin/exit-if-diff.js",
+    "run-if-diff": "./bin/run-if-diff.js"
+  },
   "exports": {
     ".": "./src/index.js",
     "./get-commit": "./src/git/commits/getCommit.js",
@@ -15,7 +19,8 @@
     "./get-files": "./src/git/getGitFiles.js",
     "./get-file-at-commit": "./src/git/getFileAtCommit.js",
     "./get-file-dates": "./src/git/dates/getFileDates.js",
-    "./get-remotes": "./src/git/remotes/getRemotes.js"
+    "./get-remotes": "./src/git/remotes/getRemotes.js",
+    "./check-diff": "./src/git/diff/checkDiff.js"
   },
   "scripts": {
     "test": "uvu . \\.test\\.js$",
@@ -30,6 +35,7 @@
   "author": "",
   "license": "MIT",
   "files": [
+    "bin",
     "dist",
     "src",
     "types",

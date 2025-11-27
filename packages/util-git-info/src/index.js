@@ -12,6 +12,7 @@ const {
   getFileCreatedTimeStamp,
   getFileDates
 } = require('./git/dates/getFileDates')
+const { checkDiff } = require('./git/diff/checkDiff')
 
 module.exports = {
   // Get Git Details
@@ -32,4 +33,6 @@ module.exports = {
   // Get Git Remotes
   getRemotes,
   getRemote,
+  // Check for differences
+  checkDiff,
 }
