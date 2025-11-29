@@ -136,7 +136,7 @@ async function detectServerlessChanges() {
       currentConfig
     } = await extractFunctionDetails(configFile)
 
-    /*
+    //*
     console.log('functionDetails', functionDetails)
     console.log('configFileRefs', configFileRefs)
     console.log('fileGlobPatterns', fileGlobPatterns)
@@ -171,7 +171,12 @@ async function detectServerlessChanges() {
     console.log('configFileRefChanges', configFileRefChanges)
 
     // Categorize config file ref changes by deployment strategy
-    const categorizedChanges = categorizeConfigFileRefChanges(configFileRefChanges, metadata, gitInfo, configFile)
+    const categorizedChanges = categorizeConfigFileRefChanges(
+      configFileRefChanges,
+      metadata,
+      gitInfo,
+      configFile,
+    )
     console.log('categorizedChanges', categorizedChanges)
 
     // If the serverless config file itself changed, analyze WHAT changed
@@ -183,17 +188,37 @@ async function detectServerlessChanges() {
       try {
         // Get previous version of config file from git
         const { execSync } = require('child_process')
-        const previousConfigContent = execSync(`git show HEAD:${configFilePath}`, {
+        const prevSlsConfigText = execSync(`git show HEAD:${configFilePath}`, {
           cwd: gitInfo.dir,
           encoding: 'utf8'
         })
+
+
+
+
+        // console.log('prevSlsConfigText', prevSlsConfigText)
+        // process.exit(1)
 
         // Write previous config to temp file next to the original config
         // This ensures relative ${file(...)} references can still resolve
         const ext = path.extname(configFile)
         const configDir = path.dirname(configFile)
         const tmpFile = path.join(configDir, `.serverless-prev-${Date.now()}${ext}`)
-        fs.writeFileSync(tmpFile, previousConfigContent)
+        fs.writeFileSync(tmpFile, prevSlsConfigText)
+
+        const previousDetails = await configorama(tmpFile, {
+          // returnMetadata: true,
+          returnPreResolvedVariableDetails: true
+        })
+        console.log(
+          `previousDetails.fileDependencies.byConfigPath ${configFilePath}`,
+          previousDetails.fileDependencies.byConfigPath
+        )
+        console.log(
+          `previousDetails.fileDependencies.references ${configFilePath}`,
+          previousDetails.fileDependencies.references[0]
+        )
+        // process.exit(1)
 
         // Also checkout previous versions of any config file refs (like env.yml)
         // so configorama can resolve ${file(...)} references from the old commit
@@ -207,13 +232,14 @@ async function detectServerlessChanges() {
                 encoding: 'utf8'
               })
 
+
               console.log('previousRefContent', previousRefContent)
 
               // Convert to absolute path for writing temp file
               const refFileAbsolute = path.join(gitInfo.dir, refFileRelative)
               const refFileDir = path.dirname(refFileAbsolute)
               const refFileName = path.basename(refFileAbsolute)
-              const tmpRefFile = path.join(refFileDir, `.${refFileName}-prev-${Date.now()}`)
+              const tmpRefFile = path.join(refFileDir, `-prev-${Date.now()}${refFileName}}`)
               console.log('tmpRefFile', tmpRefFile)
               fs.writeFileSync(tmpRefFile, previousRefContent)
               // TODO need to replace the ${file refs in the previousRefConfig before configorama resolution
@@ -258,6 +284,7 @@ async function detectServerlessChanges() {
           try {
             const tempFileContents = fs.readFileSync(tmpFile, 'utf8')
             console.log('tempFileContents', tempFileContents)
+            console.log('tmpRefFiles', tmpRefFiles)
             const previousDetails = await configorama(tmpFile, {
               returnMetadata: true,
               ignoreUnresolved: true
@@ -273,11 +300,11 @@ async function detectServerlessChanges() {
             // Fall back to raw YAML/JSON parsing for YAML/JSON files
             if (ext === '.yml' || ext === '.yaml') {
               const yaml = require('js-yaml')
-              previousConfig = yaml.load(previousConfigContent)
+              previousConfig = yaml.load(prevSlsConfigText)
               const currentConfigContent = fs.readFileSync(configFile, 'utf8')
               currentConfig = yaml.load(currentConfigContent)
             } else if (ext === '.json') {
-              previousConfig = JSON.parse(previousConfigContent)
+              previousConfig = JSON.parse(prevSlsConfigText)
               const currentConfigContent = fs.readFileSync(configFile, 'utf8')
               currentConfig = JSON.parse(currentConfigContent)
             } else {
@@ -727,21 +754,26 @@ async function extractFunctionDetails(configFile) {
     /** */
 
     // Extract file references from config metadata
-    if (metadata && metadata.resolvedFileRefs) {
+    // Note: configorama moved file deps under metadata.fileDependencies
+    if (metadata && metadata.fileDependencies) {
       const parentDir = path.dirname(configFile)
-      console.log('metadata.resolvedFileRefs for', configFile, ':', metadata.resolvedFileRefs)
-      for (const fileRef of metadata.resolvedFileRefs) {
-        const absolutePath = path.resolve(parentDir, fileRef)
-        configFileRefs.push(absolutePath)
-      }
-    }
+      const fileDeps = metadata.fileDependencies
 
-    // Also extract glob patterns for checking against created/modified files
-    if (metadata && metadata.fileGlobPatterns) {
-      const parentDir = path.dirname(configFile)
-      console.log('metadata.fileGlobPatterns for', configFile, ':', metadata.fileGlobPatterns)
-      for (const pattern of metadata.fileGlobPatterns) {
-        fileGlobPatterns.push({ pattern, baseDir: parentDir })
+      // Get resolved file paths
+      if (fileDeps.resolvedPaths && fileDeps.resolvedPaths.length > 0) {
+        console.log('metadata.fileDependencies.resolvedPaths for', configFile, ':', fileDeps.resolvedPaths)
+        for (const fileRef of fileDeps.resolvedPaths) {
+          const absolutePath = path.resolve(parentDir, fileRef)
+          configFileRefs.push(absolutePath)
+        }
+      }
+
+      // Get glob patterns for dynamic file refs (e.g., ./env.*.yml)
+      if (fileDeps.globPatterns && fileDeps.globPatterns.length > 0) {
+        console.log('metadata.fileDependencies.globPatterns for', configFile, ':', fileDeps.globPatterns)
+        for (const pattern of fileDeps.globPatterns) {
+          fileGlobPatterns.push({ pattern, baseDir: parentDir })
+        }
       }
     }
 
