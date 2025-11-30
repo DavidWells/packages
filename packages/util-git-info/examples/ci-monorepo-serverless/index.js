@@ -10,6 +10,10 @@ const { analyzeConfigChanges } = require('./utils/config-diff')
 const { categorizeConfigFileRefChanges } = require('./utils/file-ref-categorizer')
 const { deepLog } = require('./utils/deep-log')
 
+// Escape special regex characters in a string
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
 
 function displayGitDiff({ filePath, gitInfo }) {
   return getFormattedDiff({
@@ -226,12 +230,10 @@ async function detectServerlessChanges() {
         if (configFileRefChanges.length > 0) {
           for (const refFileRelative of configFileRefChanges) {
             try {
-              //
               const previousRefContent = execSync(`git show HEAD:${refFileRelative}`, {
                 cwd: gitInfo.dir,
                 encoding: 'utf8'
               })
-
 
               console.log('previousRefContent', previousRefContent)
 
@@ -239,35 +241,18 @@ async function detectServerlessChanges() {
               const refFileAbsolute = path.join(gitInfo.dir, refFileRelative)
               const refFileDir = path.dirname(refFileAbsolute)
               const refFileName = path.basename(refFileAbsolute)
-              const tmpRefFile = path.join(refFileDir, `-prev-${Date.now()}${refFileName}}`)
+              const refFileExt = path.extname(refFileName)
+              const refFileBase = refFileName.slice(0, -refFileExt.length)
+              // Keep extension at end so configorama can parse the file
+              const tmpRefFile = path.join(refFileDir, `${refFileBase}-prev-${Date.now()}${refFileExt}`)
               console.log('tmpRefFile', tmpRefFile)
               fs.writeFileSync(tmpRefFile, previousRefContent)
-              // TODO need to replace the ${file refs in the previousRefConfig before configorama resolution
-
-              /*
-              // We do have the content
-              previousRefContent TABLE_NAME: api-service-dev-table
-
-              // it gets saved here
-              tmpRefFile /public-packages/packages/util-git-info/tests/fixtures/monorepo/service-api/.env.yml-prev-1764181922691
-              tempFileContents service: api-service
-
-              // But when configorama tries to resolve it, it fails because old path
-              Unable to resolve configuration variable
-
-              Value  "${file(./env.yml):TABLE_NAME}"
-              From   "${file(./env.yml):TABLE_NAME}"
-              At location "functions.getUsers.env.TABLE_NAME" in /public-packages/packages/util-git-info/tests/fixtures/monorepo/service-api/.serverless-prev-1764181922670.yml
-
-              Fix this reference, your inputs and/or provide a valid fallback value.
-
-              Example of setting a fallback value: ${file(./env.yml):TABLE_NAME, "fallbackValue"}
-
-              */
 
               tmpRefFiles.push({
                 tmpPath: tmpRefFile,
                 originalPath: refFileAbsolute,
+                originalFileName: refFileName,
+                tmpFileName: path.basename(tmpRefFile),
               })
             } catch (refError) {
               // Ref file might not exist in previous commit (newly created)
@@ -276,24 +261,39 @@ async function detectServerlessChanges() {
           }
         }
 
+        console.log('tmpRefFiles', tmpRefFiles)
+
+        // Rewrite ${file(...)} refs in temp config to point to temp ref files
+        let tempConfigContent = prevSlsConfigText
+        for (const { originalFileName, tmpFileName } of tmpRefFiles) {
+          // Match ${file(./originalFileName) or ${file(originalFileName) patterns
+          // Replace with temp file name, preserving the rest of the variable syntax
+          const pattern = new RegExp(
+            `\\$\\{file\\((\\.\\/)?(` + escapeRegExp(originalFileName) + `)\\)`,
+            'g'
+          )
+          const replacement = '${file(./' + tmpFileName + ')'
+          tempConfigContent = tempConfigContent.replace(pattern, replacement)
+        }
+        // Update temp config file with rewritten content
+        fs.writeFileSync(tmpFile, tempConfigContent)
+
         let previousConfig = null
         let currentConfig = null
 
         try {
           // Try to parse with configorama to get original (unresolved) configs
           try {
-            const tempFileContents = fs.readFileSync(tmpFile, 'utf8')
-            console.log('tempFileContents', tempFileContents)
-            console.log('tmpRefFiles', tmpRefFiles)
             const previousDetails = await configorama(tmpFile, {
               returnMetadata: true,
               ignoreUnresolved: true
             })
             const currentDetails = await configorama(configFile, { returnMetadata: true })
-            console.log('previousDetails', previousDetails)
-            // Use originalConfig (before variable resolution) for comparison
-            previousConfig = previousDetails.originalConfig
-            currentConfig = currentDetails.originalConfig
+            // Use resolved config for comparison
+            previousConfig = previousDetails.config
+            currentConfig = currentDetails.config
+
+            deepLog('previousConfig resolved', previousConfig)
           } catch (configoramaError) {
             console.log('configoramaError', configoramaError)
             // Configorama failed (likely unresolved variable with no fallback)
