@@ -10,11 +10,6 @@ const { analyzeConfigChanges } = require('./utils/config-diff')
 const { categorizeConfigFileRefChanges } = require('./utils/file-ref-categorizer')
 const { deepLog } = require('./utils/deep-log')
 
-// Escape special regex characters in a string
-function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 function displayGitDiff({ filePath, gitInfo }) {
   return getFormattedDiff({
     filePath,
@@ -261,32 +256,23 @@ async function detectServerlessChanges() {
           }
         }
 
-        console.log('tmpRefFiles', tmpRefFiles)
-
-        // Rewrite ${file(...)} refs in temp config to point to temp ref files
-        let tempConfigContent = prevSlsConfigText
+        // Build filePathOverrides map for configorama
+        const filePathOverrides = {}
         for (const { originalFileName, tmpFileName } of tmpRefFiles) {
-          // Match ${file(./originalFileName) or ${file(originalFileName) patterns
-          // Replace with temp file name, preserving the rest of the variable syntax
-          const pattern = new RegExp(
-            `\\$\\{file\\((\\.\\/)?(` + escapeRegExp(originalFileName) + `)\\)`,
-            'g'
-          )
-          const replacement = '${file(./' + tmpFileName + ')'
-          tempConfigContent = tempConfigContent.replace(pattern, replacement)
+          filePathOverrides[`./${originalFileName}`] = `./${tmpFileName}`
         }
-        // Update temp config file with rewritten content
-        fs.writeFileSync(tmpFile, tempConfigContent)
+        console.log('filePathOverrides', filePathOverrides)
 
         let previousConfig = null
         let currentConfig = null
 
         try {
-          // Try to parse with configorama to get original (unresolved) configs
+          // Try to parse with configorama to get resolved configs
           try {
             const previousDetails = await configorama(tmpFile, {
               returnMetadata: true,
-              ignoreUnresolved: true
+              ignoreUnresolved: true,
+              filePathOverrides
             })
             const currentDetails = await configorama(configFile, { returnMetadata: true })
             // Use resolved config for comparison
