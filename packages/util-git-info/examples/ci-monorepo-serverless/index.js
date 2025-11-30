@@ -5,7 +5,6 @@ const { gitDetails } = require('../../src')
 const { extractDeps } = require('@davidwells/extract-deps')
 const { resolveDepPaths } = require('@davidwells/extract-deps/dep-graph')
 const { getFormattedDiff } = require('../../src/git/getDiffFormatted')
-const { getDeploymentStrategy } = require('./utils/deployment-strategy')
 const { analyzeConfigChanges } = require('./utils/config-diff')
 const { categorizeConfigFileRefChanges } = require('./utils/file-ref-categorizer')
 const { deepLog } = require('./utils/deep-log')
@@ -191,10 +190,6 @@ async function detectServerlessChanges() {
           cwd: gitInfo.dir,
           encoding: 'utf8'
         })
-
-
-
-
         // console.log('prevSlsConfigText', prevSlsConfigText)
         // process.exit(1)
 

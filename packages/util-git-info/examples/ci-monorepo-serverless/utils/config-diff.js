@@ -1,5 +1,5 @@
 // Deep comparison of serverless configurations to detect specific changes
-const { getDeploymentStrategy, createHash } = require('./deployment-strategy')
+const { getDeploymentStrategy, extractFunctionName, createHash } = require('./deployment-strategy')
 
 /**
  * Deep compare two objects and find differences with paths
@@ -141,10 +141,13 @@ function analyzeConfigChanges(oldConfig, newConfig) {
 
   // Categorize each difference by deployment strategy
   for (const diff of differences) {
-    const strategy = getDeploymentStrategy(diff.path)
+    const { strategy, reason } = getDeploymentStrategy(diff.path)
+    const functionName = extractFunctionName(diff.path)
     const changeInfo = {
+      ...(functionName && { functionName }),
       ...diff,
-      strategy
+      strategy,
+      reason
     }
 
     if (strategy === 'fastSdkUpdate') {
@@ -226,8 +229,9 @@ function analyzeFunctionConfigChanges(oldConfig, newConfig) {
 
         // Categorize each difference
         for (const diff of differences) {
-          const strategy = getDeploymentStrategy(diff.path)
-          const changeInfo = { ...diff, strategy }
+          const { strategy, reason } = getDeploymentStrategy(diff.path)
+          const functionName = extractFunctionName(diff.path)
+          const changeInfo = { ...(functionName && { functionName }), ...diff, strategy, reason }
 
           if (strategy === 'fastSdkUpdate') {
             categorized.fastSdkUpdate.push(changeInfo)

@@ -21,33 +21,37 @@ const crypto = require('crypto')
 const deploymentStrategyRules = {
   // Fast SDK updates - Lambda configuration only (~5 seconds)
   fastSdkUpdate: [
-    'functions.*.environment',          // Environment variables
-    'functions.*.environment.*',        // Individual env var changes
-    'functions.*.env',                  // Function-level env (Serverless shorthand)
-    'functions.*.env.*',                // Individual function-level env var changes
-    'functions.*.memorySize',           // Memory allocation
-    'functions.*.timeout',              // Timeout value
-    'functions.*.layers',               // Lambda layers
-    'functions.*.vpc',                  // VPC configuration
-    'functions.*.tracing',              // X-Ray tracing mode
-    'functions.*.reservedConcurrency',  // Reserved concurrent executions
-    'functions.*.description',          // Function description
+    { path: 'functions.*.environment', reason: 'Function environment variables' },
+    { path: 'functions.*.environment.*', reason: 'Function environment variable' },
+    { path: 'functions.*.env', reason: 'Function environment variables' },
+    { path: 'functions.*.env.*', reason: 'Function environment variable' },
+    { path: 'functions.*.memorySize', reason: 'Function memory allocation' },
+    { path: 'functions.*.timeout', reason: 'Function timeout' },
+    { path: 'functions.*.layers', reason: 'Lambda layers' },
+    { path: 'functions.*.vpc', reason: 'VPC configuration' },
+    { path: 'functions.*.tracing', reason: 'X-Ray tracing mode' },
+    { path: 'functions.*.reservedConcurrency', reason: 'Reserved concurrent executions' },
+    { path: 'functions.*.description', reason: 'Function description' },
   ],
 
   // Full deploy required - affects CloudFormation resources (~60+ seconds)
   fullDeploy: [
-    'functions.*.events',               // Any event configuration changes
-    'functions.*.events.*',             // Individual event changes
-    'functions.*.handler',              // Handler changes (usually with code)
-    'functions.*.runtime',              // Runtime changes
-    'functions.*.role',                 // IAM role changes
-    'functions.*.iamRoleStatements',    // IAM policy changes
-    'provider',                         // Provider-level changes
-    'provider.*',                       // Provider-level changes
-    'service',                          // Service-level changes
-    'service.*',                        // Service-level changes
-    'resources',                        // CloudFormation resources
-    'resources.*',                      // CloudFormation resource changes
+    { path: 'functions.*.events', reason: 'Event configuration requires CloudFormation' },
+    { path: 'functions.*.events.*', reason: 'Event configuration requires CloudFormation' },
+    { path: 'functions.*.handler', reason: 'Handler change requires CloudFormation' },
+    { path: 'functions.*.runtime', reason: 'Runtime change requires CloudFormation' },
+    { path: 'functions.*.role', reason: 'IAM role change requires CloudFormation' },
+    { path: 'functions.*.iamRoleStatements', reason: 'IAM policy change requires CloudFormation' },
+    { path: 'provider', reason: 'Provider-level change requires CloudFormation' },
+    { path: 'provider.*', reason: 'Provider-level change requires CloudFormation' },
+    { path: 'service', reason: 'Service-level change requires CloudFormation' },
+    { path: 'service.*', reason: 'Service-level change requires CloudFormation' },
+    { path: 'resources', reason: 'CloudFormation resource change' },
+    { path: 'resources.*', reason: 'CloudFormation resource change' },
+    { path: 'resources.*.*', reason: 'CloudFormation resource change' },
+    { path: 'resources.*.*.*', reason: 'CloudFormation resource change' },
+    { path: 'resources.*.*.*.*', reason: 'CloudFormation resource change' },
+    { path: 'resources.*.*.*.*.*', reason: 'CloudFormation resource change' },
   ]
 }
 
@@ -69,25 +73,25 @@ function matchesPathPattern(path, pattern) {
 /**
  * Determine the deployment strategy required for a specific change
  * @param {string} changePath - The path of the changed config (e.g., "functions.hello.environment.API_KEY")
- * @returns {string} - Deployment strategy: 'fastSdkUpdate', 'fullDeploy', or 'unknown'
+ * @returns {{strategy: string, reason: string}} - Deployment strategy and reason
  */
 function getDeploymentStrategy(changePath) {
   // Check fullDeploy patterns first (more restrictive)
-  for (const pattern of deploymentStrategyRules.fullDeploy) {
-    if (matchesPathPattern(changePath, pattern)) {
-      return 'fullDeploy'
+  for (const rule of deploymentStrategyRules.fullDeploy) {
+    if (matchesPathPattern(changePath, rule.path)) {
+      return { strategy: 'fullDeploy', reason: rule.reason }
     }
   }
 
   // Check fastSdkUpdate patterns
-  for (const pattern of deploymentStrategyRules.fastSdkUpdate) {
-    if (matchesPathPattern(changePath, pattern)) {
-      return 'fastSdkUpdate'
+  for (const rule of deploymentStrategyRules.fastSdkUpdate) {
+    if (matchesPathPattern(changePath, rule.path)) {
+      return { strategy: 'fastSdkUpdate', reason: rule.reason }
     }
   }
 
   // Unknown change type - default to full deploy for safety
-  return 'fullDeploy'
+  return { strategy: 'fullDeploy', reason: 'Unrecognized config path' }
 }
 
 /**
@@ -258,10 +262,21 @@ function hashServiceConfig(serviceConfig) {
   return createHash(normalized)
 }
 
+/**
+ * Extract function name from a config path like "functions.myFunc.env.FOO"
+ * @param {string} path - Config path
+ * @returns {string|null} - Function name or null if not a function path
+ */
+function extractFunctionName(path) {
+  const match = path.match(/^functions\.([^.]+)/)
+  return match ? match[1] : null
+}
+
 module.exports = {
   deploymentStrategyRules,
   matchesPathPattern,
   getDeploymentStrategy,
+  extractFunctionName,
   createHash,
   normalizeHttpPath,
   normalizeEvents,
