@@ -626,10 +626,26 @@ async function detectServerlessChanges() {
   // Export for CI/CD pipelines
   console.log('📋 Changed projects (JSON for CI/CD):')
   console.log(JSON.stringify(changedProjects.map(p => {
-    // Filter to only include handlers that have actually changed
-    const changedHandlers = p.functionDetails.filter(h =>
-      p.handlerChanges.some(change => change.includes(h.file))
-    )
+    // Filter to only include handlers that have actually changed (file or dependencies)
+    const changedHandlers = p.functionDetails.filter(h => {
+      // Check if handler file itself changed
+      const handlerChanged = p.handlerChanges.some(change => change.includes(h.file))
+      if (handlerChanged) return true
+
+      // Check if any dependency changed
+      if (h.dependencies && h.dependencies.length > 0) {
+        const depChanged = h.dependencies.some(dep => {
+          // dep is absolute, handlerChanges are relative to project
+          // Check path boundary to avoid false positives (e.g. foobar.js matching bar.js)
+          return p.handlerChanges.some(change =>
+            dep.endsWith('/' + change) || dep.endsWith(path.sep + change)
+          )
+        })
+        if (depChanged) return true
+      }
+
+      return false
+    })
 
     return {
       name: p.name,
