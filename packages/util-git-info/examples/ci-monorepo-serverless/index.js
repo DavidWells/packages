@@ -324,8 +324,10 @@ async function detectServerlessChanges() {
           // Couldn't parse configs
           categorizedChanges.fullDeploy.push({
             file: configFilePath,
+            type: 'parseFail',
+            strategy: 'fullDeploy',
             reason: 'Serverless configuration file changed (could not parse)',
-            strategy: 'fullDeploy'
+
           })
         }
       } catch (error) {
@@ -333,8 +335,9 @@ async function detectServerlessChanges() {
         console.log('  Could not analyze config diff:', error.message)
         categorizedChanges.fullDeploy.push({
           file: configFilePath,
+          type: 'parseFail',
+          strategy: 'fullDeploy',
           reason: 'Serverless configuration file changed (new or could not get previous version)',
-          strategy: 'fullDeploy'
         })
       }
     }
@@ -370,6 +373,8 @@ async function detectServerlessChanges() {
       },
       packageJsonChanged: packageJsonChanges.length > 0,
       configChanged: configChanges.length > 0,
+      configChangedFiles: configChanges.map(f => path.relative(projectPath, f)),
+      configDiff,
       configFileRefChanged: configFileRefChanges.length > 0,
       functionDetails,
       handlerChanges: handlerChanges.map(f => path.relative(projectPath, f)),
@@ -642,17 +647,43 @@ async function detectServerlessChanges() {
       return false
     })
 
-    return {
+    const hasConfigChanges = p.configChanged
+    const hasConfigRefChanges = p.configFileRefChanged
+    const hasFunctionChanges = p.handlerChanges.length > 0
+    const hasPackageJsonChanges = p.packageJsonChanged
+
+    const result = {
       name: p.name,
       path: p.path,
-      hasFunctionChanges: p.handlerChanges.length > 0,
-      hasConfigChanges: p.configChanged,
-      hasConfigRefChanges: p.configFileRefChanged,
-      hasPackageJsonChanges: p.packageJsonChanged,
-      changedFunctions: changedHandlers,
-      changedConfigFileRefs: p.configFileRefChanges,
-      deploymentStrategies: p.deploymentStrategy
+      hasConfigChanges,
+      hasConfigRefChanges,
+      hasFunctionChanges,
+      hasPackageJsonChanges,
     }
+
+    if (p.configChanged && p.configDiff) {
+      const allDiffs = [
+        ...(p.configDiff.fastSdkUpdate || []),
+        ...(p.configDiff.fullDeploy || []),
+        ...(p.configDiff.unknown || [])
+      ]
+      result.configChanges = {
+        files: p.configChangedFiles,
+        properties: allDiffs.map(d => d.path).filter(Boolean)
+      }
+    }
+
+    if (hasConfigRefChanges) {
+      result.changedConfigFileRefs = p.configFileRefChanges
+    }
+
+    if (hasFunctionChanges) {
+      result.changedFunctions = changedHandlers
+    }
+
+    result.deploymentStrategies = p.deploymentStrategy
+
+    return result
   }), null, 2))
 }
 

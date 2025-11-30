@@ -145,9 +145,10 @@ function analyzeConfigChanges(oldConfig, newConfig) {
     const functionName = extractFunctionName(diff.path)
     const changeInfo = {
       ...(functionName && { functionName }),
-      ...diff,
+      type: 'analyzeConfigChanges',
       strategy,
-      reason
+      reason,
+      ...diff,
     }
 
     if (strategy === 'fastSdkUpdate') {
@@ -231,7 +232,13 @@ function analyzeFunctionConfigChanges(oldConfig, newConfig) {
         for (const diff of differences) {
           const { strategy, reason } = getDeploymentStrategy(diff.path)
           const functionName = extractFunctionName(diff.path)
-          const changeInfo = { ...(functionName && { functionName }), ...diff, strategy, reason }
+          const changeInfo = {
+            ...(functionName && { functionName }),
+            type: 'analyzeFunctionConfigChanges',
+            reason,
+            strategy,
+            ...diff,
+          }
 
           if (strategy === 'fastSdkUpdate') {
             categorized.fastSdkUpdate.push(changeInfo)

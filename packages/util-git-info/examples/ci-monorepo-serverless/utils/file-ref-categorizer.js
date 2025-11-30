@@ -1,6 +1,6 @@
 // Categorize config file reference changes (like env.yml) by deployment strategy
 const path = require('path')
-const { getDeploymentStrategy } = require('./deployment-strategy')
+const { getDeploymentStrategy, extractFunctionName } = require('./deployment-strategy')
 const { minimatch } = require('minimatch')
 
 /**
@@ -84,12 +84,17 @@ function categorizeConfigFileRefChanges(changedFiles, metadata, gitInfo, configF
         })
 
         if (referencesChangedFile) {
-          const strategy = getDeploymentStrategy(configPath)
+          const { strategy, reason } = getDeploymentStrategy(configPath)
+          const functionName = extractFunctionName(configPath)
           const changeInfo = {
+            ...(functionName && { functionName }),
+            type: 'referencesChangedFile',
+            strategy,
+            reason,
             file: changedFile,
             variable: variableString,
             configPath: configPath,
-            strategy: strategy
+
           }
 
           if (strategy === 'fastSdkUpdate') {
