@@ -5,6 +5,7 @@ const { gitDetails } = require('../../src')
 const { extractDeps } = require('@davidwells/extract-deps')
 const { resolveDepPaths } = require('@davidwells/extract-deps/dep-graph')
 const { getFormattedDiff } = require('../../src/git/getDiffFormatted')
+const { getFileAtCommit } = require('../../src/git/getFileAtCommit')
 const { analyzeConfigChanges } = require('./utils/config-diff')
 const { categorizeConfigFileRefChanges } = require('./utils/file-ref-categorizer')
 const { deepLog } = require('./utils/deep-log')
@@ -185,11 +186,12 @@ async function detectServerlessChanges() {
 
       try {
         // Get previous version of config file from git
-        const { execSync } = require('child_process')
-        const prevSlsConfigText = execSync(`git show HEAD:${configFilePath}`, {
-          cwd: gitInfo.dir,
-          encoding: 'utf8'
+        const prevSlsConfigText = await getFileAtCommit(configFilePath, 'HEAD', {
+          cwd: gitInfo.dir
         })
+        if (!prevSlsConfigText) {
+          throw new Error(`File not found at HEAD: ${configFilePath}`)
+        }
         // console.log('prevSlsConfigText', prevSlsConfigText)
         // process.exit(1)
 
@@ -220,10 +222,12 @@ async function detectServerlessChanges() {
         if (configFileRefChanges.length > 0) {
           for (const refFileRelative of configFileRefChanges) {
             try {
-              const previousRefContent = execSync(`git show HEAD:${refFileRelative}`, {
-                cwd: gitInfo.dir,
-                encoding: 'utf8'
+              const previousRefContent = await getFileAtCommit(refFileRelative, 'HEAD', {
+                cwd: gitInfo.dir
               })
+              if (!previousRefContent) {
+                throw new Error(`File not found at HEAD`)
+              }
 
               console.log('previousRefContent', previousRefContent)
 

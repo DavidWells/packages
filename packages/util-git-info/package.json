@@ -14,6 +14,7 @@
     "./get-root": "./src/git/getGitRoot.js",
     "./get-files": "./src/git/getGitFiles.js",
     "./get-file-at-commit": "./src/git/getFileAtCommit.js",
+    "./get-diff-formatted": "./src/git/getDiffFormatted.js",
     "./get-file-dates": "./src/git/dates/getFileDates.js",
     "./get-remotes": "./src/git/remotes/getRemotes.js"
   },
@@ -56,7 +57,7 @@
     "@davidwells/extract-deps": "^0.0.5",
     "@davidwells/git-split-diffs": "file:./git-split-diffs-repo",
     "@types/node": "^22.10.1",
-    "configorama": "^0.6.9",
+    "configorama": "^0.6.14",
     "minimatch": "^10.0.1",
     "typescript": "^5.7.2",
     "uvu": "^0.5.6"
