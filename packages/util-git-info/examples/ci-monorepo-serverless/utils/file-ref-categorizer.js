@@ -60,9 +60,9 @@ function categorizeConfigFileRefChanges(changedFiles, metadata, gitInfo, configF
 
         // Check if any resolve details reference the changed file
         let referencesChangedFile = instance.resolveDetails?.some(detail => {
-          if (detail.varType && detail.varType.startsWith('file(')) {
-            // Extract the file path from the varType (with possible unresolved variables)
-            const match = detail.varType.match(/file\(([^)]+)\)/)
+          if (detail.variableType === 'file') {
+            // Extract the file path from varString: "file(./env.yml):KEY" or "file(./path.yml)"
+            const match = detail.varString?.match(/^file\(([^)]+)\)/)
             if (match) {
               const referencedFile = match[1]
 
