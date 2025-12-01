@@ -55,12 +55,13 @@ function getLongestLineLength(diff) {
  * Get formatted diff for a specific file
  * @param {Object} options - Options for getting formatted diff
  * @param {string} options.filePath - Relative path from git root
- * @param {string} options.gitRootDir - Absolute path to git root directory
- * @param {string} options.baseBranch - Base branch to compare against
- * @param {boolean} options.shrinkToLongestLine - Auto-calculate width based on longest line
- * @param {number} options.leftMargin - Number of spaces to add to the left of each line
- * @param {number} options.width - Width of the diff output (ignored if shrinkToLongestLine is true)
- * @param {boolean} options.hideHeader - Remove the file path header from the diff
+ * @param {string} [options.gitRootDir] - Absolute path to git root directory (defaults to detected git root)
+ * @param {string} [options.baseBranch='master'] - Base branch to compare against
+ * @param {boolean} [options.shrinkToLongestLine=false] - Auto-calculate width based on longest line
+ * @param {number} [options.leftMargin=0] - Number of spaces to add to the left of each line
+ * @param {number} [options.width=140] - Width of the diff output (ignored if shrinkToLongestLine is true)
+ * @param {boolean} [options.hideHeader=false] - Remove the file path header from the diff
+ * @returns {Promise<string | null>} Formatted diff string or null if no diff
  */
 async function getFormattedDiff({
   filePath,
