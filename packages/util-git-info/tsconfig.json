@@ -47,6 +47,7 @@
   ],
   "exclude": [
     "node_modules",
+    "git-split-diffs-repo",
     "tests",
     "**/*.test.js",
     "types"

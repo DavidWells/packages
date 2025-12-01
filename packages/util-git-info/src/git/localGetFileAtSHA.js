@@ -15,16 +15,18 @@ const d = debug('localGetFileAtSHA')
  */
 const localGetFileAtSHA = (path, _repo, sha, options = {}) => {
   const cwd = options.cwd || process.cwd()
-  return new Promise(resolve => {
+  /** @type {Promise<string|undefined>} */
+  const promise = new Promise(resolve => {
     const call = `git show ${sha}:'${path}'`
     d(call)
     exec(call, { cwd }, (err, stdout, _stderr) => {
       if (err) {
-        return resolve()
+        return resolve(undefined)
       }
       resolve(stdout)
     })
   })
+  return promise
 }
 
 module.exports.localGetFileAtSHA = localGetFileAtSHA

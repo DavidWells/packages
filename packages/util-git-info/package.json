@@ -1,22 +1,58 @@
 {
   "name": "git-er-done",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Utility for dealing with modified, created, deleted files since a git commit",
   "main": "src/index.js",
   "types": "types/index.d.ts",
   "exports": {
-    ".": "./src/index.js",
-    "./get-commit": "./src/git/commits/getCommit.js",
-    "./get-all-commits": "./src/git/commits/getAllCommits.js",
-    "./get-first-commit": "./src/git/commits/getFirstCommit.js",
-    "./get-last-commit": "./src/git/commits/getLastCommit.js",
-    "./get-details": "./src/git/getDetails.js",
-    "./get-root": "./src/git/getGitRoot.js",
-    "./get-files": "./src/git/getGitFiles.js",
-    "./get-file-at-commit": "./src/git/getFileAtCommit.js",
-    "./get-diff-formatted": "./src/git/getDiffFormatted.js",
-    "./get-file-dates": "./src/git/dates/getFileDates.js",
-    "./get-remotes": "./src/git/remotes/getRemotes.js"
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./get-commit": {
+      "types": "./types/git/commits/getCommit.d.ts",
+      "default": "./src/git/commits/getCommit.js"
+    },
+    "./get-all-commits": {
+      "types": "./types/git/commits/getAllCommits.d.ts",
+      "default": "./src/git/commits/getAllCommits.js"
+    },
+    "./get-first-commit": {
+      "types": "./types/git/commits/getFirstCommit.d.ts",
+      "default": "./src/git/commits/getFirstCommit.js"
+    },
+    "./get-last-commit": {
+      "types": "./types/git/commits/getLastCommit.d.ts",
+      "default": "./src/git/commits/getLastCommit.js"
+    },
+    "./get-details": {
+      "types": "./types/git/getDetails.d.ts",
+      "default": "./src/git/getDetails.js"
+    },
+    "./get-root": {
+      "types": "./types/git/getGitRoot.d.ts",
+      "default": "./src/git/getGitRoot.js"
+    },
+    "./get-files": {
+      "types": "./types/git/getGitFiles.d.ts",
+      "default": "./src/git/getGitFiles.js"
+    },
+    "./get-file-at-commit": {
+      "types": "./types/git/getFileAtCommit.d.ts",
+      "default": "./src/git/getFileAtCommit.js"
+    },
+    "./get-diff-formatted": {
+      "types": "./types/git/getDiffFormatted.d.ts",
+      "default": "./src/git/getDiffFormatted.js"
+    },
+    "./get-file-dates": {
+      "types": "./types/git/dates/getFileDates.d.ts",
+      "default": "./src/git/dates/getFileDates.js"
+    },
+    "./get-remotes": {
+      "types": "./types/git/remotes/getRemotes.d.ts",
+      "default": "./src/git/remotes/getRemotes.js"
+    }
   },
   "scripts": {
     "test": "uvu . \\.test\\.js$",
@@ -55,7 +91,7 @@
   },
   "devDependencies": {
     "@davidwells/extract-deps": "^0.0.5",
-    "@davidwells/git-split-diffs": "file:./git-split-diffs-repo",
+    "@davidwells/git-split-diffs": "^2.2.1",
     "@types/node": "^22.10.1",
     "configorama": "^0.6.14",
     "minimatch": "^10.0.1",

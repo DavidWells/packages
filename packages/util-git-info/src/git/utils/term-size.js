@@ -50,9 +50,8 @@ function createIfNotDefault(maybeColumns, maybeRows) {
 function devTty() {
   try {
     // eslint-disable-next-line no-bitwise
-    // @ts-ignore
-    const flags =
-      process.platform === 'darwin' ? fs.constants.O_EVTONLY | fs.constants.O_NONBLOCK : fs.constants.O_NONBLOCK
+    // @ts-ignore - O_EVTONLY is macOS-specific
+    const flags = process.platform === 'darwin' ? fs.constants.O_EVTONLY | fs.constants.O_NONBLOCK : fs.constants.O_NONBLOCK
     // eslint-disable-next-line new-cap
     // @ts-ignore
     const { columns, rows } = tty.WriteStream(fs.openSync('/dev/tty', flags))
