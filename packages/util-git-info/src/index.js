@@ -5,6 +5,7 @@ const { getLastCommit } = require('./git/commits/getLastCommit')
 const { getAllCommits } = require('./git/commits/getAllCommits')
 const { getGitFiles } = require('./git/getGitFiles')
 const { getGitRoot } = require('./git/getGitRoot')
+const { getCurrentBranch } = require('./git/getCurrentBranch')
 const { getRemotes, getRemote } = require('./git/remotes/getRemotes')
 const { getFileAtCommit } = require('./git/getFileAtCommit')
 const {
@@ -17,6 +18,7 @@ module.exports = {
   // Get Git Details
   gitDetails,
   getGitRoot,
+  getCurrentBranch,
   // Get Commits
   getCommit,
   getAllCommits,

@@ -33,6 +33,10 @@
       "types": "./types/git/getGitRoot.d.ts",
       "default": "./src/git/getGitRoot.js"
     },
+    "./get-current-branch": {
+      "types": "./types/git/getCurrentBranch.d.ts",
+      "default": "./src/git/getCurrentBranch.js"
+    },
     "./get-files": {
       "types": "./types/git/getGitFiles.d.ts",
       "default": "./src/git/getGitFiles.js"
