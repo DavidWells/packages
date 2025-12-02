@@ -1,6 +1,6 @@
 {
   "name": "git-er-done",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "Utility for dealing with modified, created, deleted files since a git commit",
   "main": "src/index.js",
   "types": "types/index.d.ts",
@@ -79,7 +79,7 @@
   "dependencies": {
     "debug": "^4.1.1",
     "json5": "^2.1.1",
-    "jsonpointer": "^4.0.1",
+    "jsonpointer": "^5.0.1",
     "lodash.includes": "^4.3.0",
     "lodash.isobject": "^3.0.2",
     "lodash.keys": "^4.2.0",
@@ -87,17 +87,17 @@
     "lodash.memoize": "^4.1.2",
     "micromatch": "^4.0.2",
     "parse-diff": "^0.6.0",
-    "rfc6902": "^3.0.4"
+    "rfc6902": "^5.1.2"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/DavidWells/components/tree/master/packages/util-git-info"
   },
   "devDependencies": {
-    "@davidwells/extract-deps": "^0.0.5",
+    "@davidwells/extract-deps": "^0.0.6",
     "@davidwells/git-split-diffs": "^2.2.1",
     "@types/node": "^22.10.1",
-    "configorama": "^0.6.14",
+    "configorama": "^0.7.1",
     "minimatch": "^10.0.1",
     "typescript": "^5.7.2",
     "uvu": "^0.5.6"
