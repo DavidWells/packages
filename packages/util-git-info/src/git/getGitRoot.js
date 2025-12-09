@@ -1,19 +1,24 @@
 const { executeCommand } = require('./utils/exec')
 
-let gitRoot
+/** @type {Map<string, string>} */
+const gitRootCache = new Map()
+
 /**
  * Gets the root directory of the git repository
  * @returns {Promise<string>} A promise that resolves to the root directory path of the git repository
  */
 function getGitRoot() {
   return new Promise((resolve, reject) => {
-    if (gitRoot) {
-      return resolve(gitRoot)
+    const cwd = process.cwd()
+    const cached = gitRootCache.get(cwd)
+    if (cached) {
+      return resolve(cached)
     }
     executeCommand('git rev-parse --show-toplevel', (err, res) => {
       if (err) return reject(err)
-      gitRoot = res.trim()
-      resolve(res.trim())
+      const root = res.trim()
+      gitRootCache.set(cwd, root)
+      resolve(root)
     })
   })
 }
