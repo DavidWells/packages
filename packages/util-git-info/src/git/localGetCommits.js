@@ -27,11 +27,17 @@ const formatJSON = `{ "sha": "${sha}", "parents": "${parents}", ${author}, ${com
   committedOn: a[6],
 */
 
-const localGetCommits = (base, head) => {
+/**
+ * Get commits between two refs
+ * @param {string} base - Base ref
+ * @param {string} head - Head ref
+ * @param {string} [cwd] - Working directory (defaults to process.cwd())
+ */
+const localGetCommits = (base, head, cwd) => {
   // @TODO add exclude "subject" and "body" option to ignore parsing issues
   return new Promise(resolve => {
     const args = ['log', `${base}...${head}`, `--pretty=format:${formatJSON}`]
-    const child = spawn('git', args, { env: process.env })
+    const child = spawn('git', args, { env: process.env, cwd: cwd || process.cwd() })
     let stdOut = ''
     let stdErr = ''
     let realCommits = []

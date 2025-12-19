@@ -22,6 +22,8 @@ const GIT_COMMIT_REF = '9f63b23ec99e36a176d73909fc67a39dc3bd56b7'
 
 gitDetails({
   base: GIT_COMMIT_REF,
+  // Optional: specify working directory (defaults to process.cwd())
+  // cwd: '/path/to/repo'
 }).then((git) => {
   /* git data returns
   {
@@ -61,6 +63,38 @@ const git = await gitDetails()
 console.log('Modified files:', git.modifiedFiles)
 console.log('Created files:', git.createdFiles)
 console.log('Deleted files:', git.deletedFiles)
+```
+
+### Running from a Different Directory
+
+All functions support a `cwd` option to run git commands in a different directory:
+
+```js
+const { gitDetails, getCurrentBranch, getLastCommit } = require('git-er-done')
+
+// Run git commands in a different repo
+const git = await gitDetails({
+  base: 'main',
+  cwd: '/path/to/other/repo'
+})
+
+const branch = await getCurrentBranch({ cwd: '/path/to/other/repo' })
+const lastCommit = await getLastCommit({ cwd: '/path/to/other/repo' })
+```
+
+### Comparing Against Uncommitted Changes
+
+Use `includeWorkingChanges` to compare against uncommitted changes in the working directory:
+
+```js
+const { gitDetails } = require('git-er-done')
+
+const git = await gitDetails({
+  base: 'main',
+  includeWorkingChanges: true
+})
+
+console.log('Uncommitted changes:', git.modifiedFiles)
 ```
 
 ### Getting Lines of Code Changed
@@ -210,6 +244,21 @@ const { getGitRoot } = require('git-er-done')
 
 const root = await getGitRoot()
 console.log('Git root:', root) // '/Users/you/your-repo'
+
+// With cwd option
+const otherRoot = await getGitRoot('/path/to/other/repo')
+```
+
+### Getting Current Branch
+
+```js
+const { getCurrentBranch } = require('git-er-done')
+
+const branch = await getCurrentBranch()
+console.log('Current branch:', branch) // 'main'
+
+// With cwd option
+const otherBranch = await getCurrentBranch({ cwd: '/path/to/other/repo' })
 ```
 
 ### Getting File Contents at a Specific Commit
@@ -260,10 +309,12 @@ const { getFirstCommit } = require('git-er-done/get-first-commit')
 const { getLastCommit } = require('git-er-done/get-last-commit')
 const { gitDetails } = require('git-er-done/get-details')
 const { getGitRoot } = require('git-er-done/get-root')
+const { getCurrentBranch } = require('git-er-done/get-current-branch')
 const { getGitFiles } = require('git-er-done/get-files')
 const { getFileAtCommit } = require('git-er-done/get-file-at-commit')
 const { getFileDates, getFileModifiedTimeStamp, getFileCreatedTimeStamp } = require('git-er-done/get-file-dates')
 const { getRemotes, getRemote } = require('git-er-done/get-remotes')
+const { getFormattedDiff } = require('git-er-done/get-diff-formatted')
 ```
 
 ## Examples

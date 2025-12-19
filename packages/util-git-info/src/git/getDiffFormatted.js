@@ -56,6 +56,7 @@ function getLongestLineLength(diff) {
  * @param {Object} options - Options for getting formatted diff
  * @param {string} options.filePath - Relative path from git root
  * @param {string} [options.gitRootDir] - Absolute path to git root directory (defaults to detected git root)
+ * @param {string} [options.cwd] - Working directory for git commands (defaults to process.cwd())
  * @param {string} [options.baseBranch='master'] - Base branch to compare against
  * @param {boolean} [options.shrinkToLongestLine=false] - Auto-calculate width based on longest line
  * @param {number} [options.leftMargin=0] - Number of spaces to add to the left of each line
@@ -66,6 +67,7 @@ function getLongestLineLength(diff) {
 async function getFormattedDiff({
   filePath,
   gitRootDir,
+  cwd,
   baseBranch = 'master',
   shrinkToLongestLine = false,
   leftMargin = 0,
@@ -76,7 +78,7 @@ async function getFormattedDiff({
     const { formatDiff } = await import('@davidwells/git-split-diffs')
 
     if (!gitRootDir) {
-      gitRootDir = await getGitRoot()
+      gitRootDir = await getGitRoot(cwd)
     }
 
     // Get the diff for this specific file

@@ -12,6 +12,7 @@ const { LocalGit } = require('../localGit')
  * @param {string} [opts.from] - Alias for opts.base
  * @param {string} [opts.to] - Alias for opts.head
  * @param {boolean} [opts.includeWorkingChanges=false] - If true, compares against uncommitted changes in working directory instead of HEAD
+ * @param {string} [opts.cwd] - Working directory for git commands (defaults to process.cwd())
  * @returns {Promise<GitDetails>} Promise that resolves to git details including modified/created/deleted files, commits, and utility functions
  * @example
  * // Compare between commits

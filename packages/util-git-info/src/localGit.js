@@ -26,9 +26,11 @@ class LocalGit {
    * @param {string} [options.to] - Alias for head commit/branch
    * @param {string} [options.head='HEAD'] - The head commit/branch to compare to. Pass empty string '' to compare against working directory
    * @param {boolean} [options.includeWorkingChanges=false] - If true, compares against uncommitted changes in working directory instead of HEAD
+   * @param {string} [options.cwd] - Working directory for git commands (defaults to process.cwd())
    */
   constructor(options) {
     this.options = options
+    this.cwd = options.cwd
     this.getFileContents = path => {
       // eslint-disable-next-line promise/param-names
       return new Promise(res => res(readFileSync(path, 'utf8')))
@@ -55,7 +57,7 @@ class LocalGit {
     if (this.gitDiff) {
       return this.gitDiff
     }
-    this.gitDiff = await localGetDiff(this.base, this.head)
+    this.gitDiff = await localGetDiff(this.base, this.head, this.cwd)
     return this.gitDiff
   }
   /**
@@ -80,6 +82,7 @@ class LocalGit {
   async getPlatformGitRepresentation() {
     const base = this.base
     const head = this.head
+    const cwd = this.cwd
 
     const t0 = DEBUG_TIMING ? Date.now() : 0
     const diff = await this.getGitDiff()
@@ -87,7 +90,7 @@ class LocalGit {
     if (DEBUG_TIMING) console.log(`    ⏱️  getGitDiff: ${t1 - t0}ms`)
 
     // Array of commits
-    const commits = await localGetCommits(base, head)
+    const commits = await localGetCommits(base, head, cwd)
     const t2 = DEBUG_TIMING ? Date.now() : 0
     if (DEBUG_TIMING) console.log(`    ⏱️  localGetCommits: ${t2 - t1}ms`)
 
@@ -96,12 +99,13 @@ class LocalGit {
     const t3 = DEBUG_TIMING ? Date.now() : 0
     if (DEBUG_TIMING) console.log(`    ⏱️  diffToGitJSONDSL: ${t3 - t2}ms (parsing ${diff.split('\n').length} lines of diff)`)
 
-    const gitRoot = await getGitRoot()
+    const gitRoot = await getGitRoot(cwd)
 
     const config = {
       repo: gitRoot,
       baseSHA: base,
       headSHA: head,
+      cwd,
       getFileContents: localGetFileAtSHA,
       getFullDiff: localGetDiff,
       getNumstat: localGetNumstat

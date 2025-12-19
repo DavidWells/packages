@@ -9,13 +9,14 @@ const d = debug('localGetNumstat')
  *
  * @param {string} base - Base commit SHA
  * @param {string} head - Head commit SHA
+ * @param {string} [cwd] - Working directory (defaults to process.cwd())
  * @returns {Promise<number>} Total lines of code changed (additions + deletions)
  */
-const localGetNumstat = (base, head) => {
+const localGetNumstat = (base, head, cwd) => {
   return new Promise((resolve, reject) => {
     const args = ['diff', `${base}...${head}`, '--numstat']
     let stdout = ''
-    const child = spawn('git', args, { env: process.env })
+    const child = spawn('git', args, { env: process.env, cwd: cwd || process.cwd() })
     d('> git', args.join(' '))
 
     child.stdout.on('data', chunk => {

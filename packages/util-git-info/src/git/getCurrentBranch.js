@@ -3,11 +3,14 @@ const { executeCommand } = require('./utils/exec')
 
 /**
  * Gets the current branch name of the git repository
+ * @param {Object} [options] - Options
+ * @param {string} [options.cwd] - Working directory (defaults to process.cwd())
  * @returns {Promise<string>} A promise that resolves to the current branch name
  */
-function getCurrentBranch() {
+function getCurrentBranch(options) {
   return new Promise((resolve, reject) => {
-    executeCommand('git rev-parse --abbrev-ref HEAD', (err, res) => {
+    const opts = options ? { dst: options.cwd } : undefined
+    executeCommand('git rev-parse --abbrev-ref HEAD', opts, (err, res) => {
       if (err) return reject(err)
       resolve(res.trim())
     })

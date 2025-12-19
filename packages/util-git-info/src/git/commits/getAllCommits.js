@@ -8,6 +8,8 @@ const { gitDetails } = require('../getDetails')
 
 /**
  * Gets all commits in the repository from first to last
+ * @param {Object} [options] - Options
+ * @param {string} [options.cwd] - Working directory (defaults to process.cwd())
  * @returns {Promise<CommitInfo[]>} Promise that resolves to array of all commits in chronological order
  * @example
  * const commits = await getAllCommits()
@@ -15,16 +17,17 @@ const { gitDetails } = require('../getDetails')
  *   console.log(`${commit.sha}: ${commit.subject}`)
  * })
  */
-async function getAllCommits() {
-  const firstCommit = await getFirstCommit()
+async function getAllCommits(options) {
+  const firstCommit = await getFirstCommit(options)
   // console.log('firstCommit', firstCommit)
-  const lastCommit = await getLastCommit()
+  const lastCommit = await getLastCommit(options)
   // console.log('lastCommit', lastCommit)
   const data = await gitDetails({
     // base === now
     base: lastCommit.sha,
     // head == start
-    head: firstCommit.sha
+    head: firstCommit.sha,
+    cwd: options && options.cwd
   })
   // console.log('data.commits', data.commits.reverse())
   // process.exit(1)

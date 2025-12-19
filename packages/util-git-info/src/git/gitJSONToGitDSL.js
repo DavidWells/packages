@@ -13,7 +13,7 @@ module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
   const getFullDiff = config.getStructuredDiffForFile
     ? null
     : memoize((base, head) => {
-      return config.getFullDiff(base, head)
+      return config.getFullDiff(base, head, config.cwd)
     }, (base, head) => `${base}...${head}`)
   /**
    * Takes a filename, and pulls from the PR the two versions of a file
@@ -31,12 +31,14 @@ module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
     const baseFile = await config.getFileContents(
       filename,
       config.repo,
-      config.baseSHA
+      config.baseSHA,
+      { cwd: config.cwd }
     )
     const headFile = await config.getFileContents(
       filename,
       config.repo,
-      config.headSHA
+      config.headSHA,
+      { cwd: config.cwd }
     )
     // Parse JSON. `fileContents` returns empty string for files that are
     // missing in one of the refs, ie. when the file is created or deleted.
@@ -110,7 +112,7 @@ module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
   const linesOfCode = async () => {
     // Use optimized numstat if available (single git command vs hundreds)
     if (config.getNumstat) {
-      return await config.getNumstat(config.baseSHA, config.headSHA)
+      return await config.getNumstat(config.baseSHA, config.headSHA, config.cwd)
     }
 
     // Fallback to original implementation
@@ -190,12 +192,14 @@ module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
       before: await config.getFileContents(
         filename,
         config.repo,
-        config.baseSHA
+        config.baseSHA,
+        { cwd: config.cwd }
       ),
       after: await config.getFileContents(
         filename,
         config.repo,
-        config.headSHA
+        config.headSHA,
+        { cwd: config.cwd }
       ),
       diff: allLines.map(getContent).join(os.EOL),
       added: allLines

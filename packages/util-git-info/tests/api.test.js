@@ -84,8 +84,7 @@ test('Should error when the option "head" points to an unknown commit', (t) => {
 
 const LINES_OF_CODE = 6490
 
-/*
-test.serial('Should allow overriding the current directory', async (t) => {
+timedTest('Should allow overriding the current directory with cwd option', async () => {
   const currentCwd = getCwd()
   try {
     chdir('/')
@@ -93,12 +92,12 @@ test.serial('Should allow overriding the current directory', async (t) => {
       ...DEFAULT_OPTS,
       cwd: currentCwd
     })
-    t.is(linesOfCode, LINES_OF_CODE)
+    const lines = await linesOfCode()
+    assert.is(lines, LINES_OF_CODE)
   } finally {
     chdir(currentCwd)
   }
 })
-*/
 
 /*
 test('Should throw when the current directory is invalid', (t) => {

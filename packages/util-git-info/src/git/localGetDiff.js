@@ -3,7 +3,13 @@ const { spawn } = require('child_process')
 
 const d = debug('localGetDiff')
 
-const localGetDiff = (base, head) => {
+/**
+ * Get git diff between two refs
+ * @param {string} base - Base ref
+ * @param {string} head - Head ref
+ * @param {string} [cwd] - Working directory (defaults to process.cwd())
+ */
+const localGetDiff = (base, head, cwd) => {
   return new Promise((resolve, reject) => {
     // If head is empty/null/undefined, compare against working directory
     // Otherwise use three-dot syntax for commit-to-commit comparison
@@ -12,7 +18,7 @@ const localGetDiff = (base, head) => {
       : ['diff', `${base}...${head}`]
 
     let stdout = ''
-    const child = spawn('git', args, { env: process.env })
+    const child = spawn('git', args, { env: process.env, cwd: cwd || process.cwd() })
     d('> git', args.join(' '))
     child.stdout.on('data', chunk => {
       stdout += chunk
