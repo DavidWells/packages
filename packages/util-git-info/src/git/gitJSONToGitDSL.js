@@ -223,6 +223,7 @@ module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
     modifiedFiles: gitJSONRep.modified_files,
     createdFiles: gitJSONRep.created_files,
     deletedFiles: gitJSONRep.deleted_files,
+    renamedFiles: gitJSONRep.renamed_files || [],
     commits: gitJSONRep.commits,
     lastCommit: gitJSONRep.commits && gitJSONRep.commits[0] && gitJSONRep.commits[0].sha,
     dir: config.repo,

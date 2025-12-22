@@ -36,11 +36,18 @@
  */
 
 /**
+ * @typedef {Object} RenamedFile
+ * @property {string} from - Original file path before rename
+ * @property {string} to - New file path after rename
+ */
+
+/**
  * @typedef {Object} GitDetails
  * @property {function(...(string|string[])): FileMatchResult} fileMatch - Function to match files by glob pattern(s). Accepts multiple strings, arrays of strings, or a mix using rest parameters. Supports negation patterns with '!' prefix
  * @property {string[]} modifiedFiles - Array of modified file paths
  * @property {string[]} createdFiles - Array of created file paths
  * @property {string[]} deletedFiles - Array of deleted file paths
+ * @property {RenamedFile[]} renamedFiles - Array of renamed files with from/to paths
  * @property {CommitInfo[]} commits - Array of commits between base and head
  * @property {string} lastCommit - SHA of the last commit
  * @property {string} dir - Root path of the git repository

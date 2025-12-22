@@ -38,6 +38,7 @@ timedTest('Should define all its methods and properties', async () => {
     'lastCommit',
     'linesOfCode',
     'modifiedFiles',
+    'renamedFiles',
   ])
 })
 
