@@ -52,6 +52,12 @@ function getLongestLineLength(diff) {
 }
 
 /**
+ * @typedef {Object} FormattedDiffResult
+ * @property {string} formatted - Terminal-formatted diff with colors
+ * @property {string} raw - Raw unified diff from git
+ */
+
+/**
  * Get formatted diff for a specific file
  * @param {Object} options - Options for getting formatted diff
  * @param {string} options.filePath - Relative path from git root
@@ -62,7 +68,8 @@ function getLongestLineLength(diff) {
  * @param {number} [options.leftMargin=0] - Number of spaces to add to the left of each line
  * @param {number} [options.width=140] - Width of the diff output (ignored if shrinkToLongestLine is true)
  * @param {boolean} [options.hideHeader=false] - Remove the file path header from the diff
- * @returns {Promise<string | null>} Formatted diff string or null if no diff
+ * @param {boolean} [options.returnRaw=false] - Return both formatted and raw diff
+ * @returns {Promise<string | FormattedDiffResult | null>} Formatted diff string, or {formatted, raw} if returnRaw, or null if no diff
  */
 async function getFormattedDiff({
   filePath,
@@ -72,7 +79,8 @@ async function getFormattedDiff({
   shrinkToLongestLine = false,
   leftMargin = 0,
   width = 140,
-  hideHeader = false
+  hideHeader = false,
+  returnRaw = false
 }) {
   try {
     const { formatDiff } = await import('@davidwells/git-split-diffs')
@@ -130,9 +138,12 @@ async function getFormattedDiff({
     // Add left margin if specified
     if (leftMargin > 0) {
       const margin = ' '.repeat(leftMargin)
-      return formatted.split('\n').map(line => margin + line).join('\n')
+      formatted = formatted.split('\n').map(line => margin + line).join('\n')
     }
 
+    if (returnRaw) {
+      return { formatted, raw: diff }
+    }
     return formatted
   } catch (err) {
     console.error(`Error formatting diff for ${filePath}:`, err.message)
