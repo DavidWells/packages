@@ -68,6 +68,9 @@ function getLongestLineLength(diff) {
  * @param {number} [options.leftMargin=0] - Number of spaces to add to the left of each line
  * @param {number} [options.width=140] - Width of the diff output (ignored if shrinkToLongestLine is true)
  * @param {boolean} [options.hideHeader=false] - Remove the file path header from the diff
+ * @param {boolean} [options.hideFileHeader=false] - Hide file header (passed to formatDiff)
+ * @param {boolean} [options.hideHeaderTopLine=false] - Hide header top line (passed to formatDiff)
+ * @param {boolean} [options.disableDefaultBackground=false] - Disable default background colors (passed to formatDiff)
  * @param {boolean} [options.returnRaw=false] - Return both formatted and raw diff
  * @returns {Promise<string | FormattedDiffResult | null>} Formatted diff string, or {formatted, raw} if returnRaw, or null if no diff
  */
@@ -80,6 +83,9 @@ async function getFormattedDiff({
   leftMargin = 0,
   width = 140,
   hideHeader = false,
+  hideFileHeader = false,
+  hideHeaderTopLine = false,
+  disableDefaultBackground = false,
   returnRaw = false
 }) {
   try {
@@ -115,10 +121,6 @@ async function getFormattedDiff({
 
     // Format the diff with git-split-diffs
     let formatted = await formatDiff(diff, {
-      // hyperlinkFileNames: false,
-      // hyperlinkLineNumbers: false,
-      // hideFileHeader: true,
-      // omitHunkHeaders: true,
       trimLastEmptyLine: true,
       width: maxWidth,
       minLineWidth: 80,
@@ -126,6 +128,9 @@ async function getFormattedDiff({
       highlightLineChanges: true,
       themeName: 'dark',
       gitRootDir,
+      hideFileHeader,
+      hideHeaderTopLine,
+      disableDefaultBackground,
     })
 
     // Remove header if hideHeader is true
