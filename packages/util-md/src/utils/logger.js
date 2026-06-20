@@ -1,13 +1,22 @@
-const util = require('util')
+const DEBUG = typeof process !== 'undefined' &&
+  process &&
+  Array.isArray(process.argv) &&
+  process.argv.includes('--debug')
 
-let DEBUG = process.argv.includes('--debug') ? true : false
-// DEBUG = true
 const logger = DEBUG ? deepLog : () => {}
+
+function formatObject(value) {
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch (err) {
+    return String(value)
+  }
+}
 
 function logValue(value, isFirst, isLast) {
   const prefix = `${isFirst ? '> ' : ''}`
   if (typeof value === 'object') {
-    console.log(`${util.inspect(value, false, null, true)}\n`)
+    console.log(`${formatObject(value)}\n`)
     return
   }
   if (isFirst) {
@@ -24,4 +33,5 @@ function deepLog() {
 
 module.exports = {
   deepLog,
+  logger,
 }

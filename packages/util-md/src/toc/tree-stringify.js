@@ -1,5 +1,3 @@
-const { deepLog } = require('../utils/logger')
-
 function treeStringify(tocTree, options = {
   skipH1: false,
   stripFirstH1: false,
