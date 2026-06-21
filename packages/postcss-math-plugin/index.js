@@ -137,33 +137,35 @@ module.exports = (opts = {}) => {
     functionName = opts.functionName
   }
 
+  var match = functionName + '(';
+
+  // Transform a single node property (value/params/selector) if it contains resolve()
+  function transformNode(node, nodeProp) {
+    if (!node[nodeProp] || node[nodeProp].indexOf(match) === -1) {
+      return;
+    }
+    node[nodeProp] = helpers.try(function() {
+      return transformResolve(node[nodeProp], functionName, node.prop);
+    }, node.source);
+  }
+
+  // Per-node visitors (PostCSS 8) so this runs in plugin order relative to other
+  // visitor plugins — e.g. after postcss-simple-vars substitutes $vars. The old
+  // `Once` whole-tree walk ran before visitor plugins, so $vars inside resolve()
+  // were not yet substituted.
   return {
     postcssPlugin: 'postcss-math',
-    Once: (css) => {
-      // Transform CSS AST here
-      css.walk(function(node) {
-        var nodeProp;
-        // console.log('node', node)
-        if (node.type === 'decl') {
-          nodeProp = 'value';
-        } else if (node.type === 'atrule' && node.name === 'media') {
-          nodeProp = 'params';
-        } else if (node.type === 'rule') {
-          nodeProp = 'selector';
-        } else {
-          return;
-        }
-
-        var match = functionName + '(';
-        if (!node[nodeProp] || node[nodeProp].indexOf(match) === -1) {
-          return;
-        }
-
-        node[nodeProp] = helpers.try(function() {
-          return transformResolve(node[nodeProp], functionName, node.prop);
-        }, node.source);
-      })
-    }
+    Declaration(decl) {
+      transformNode(decl, 'value');
+    },
+    AtRule(atRule) {
+      if (atRule.name === 'media') {
+        transformNode(atRule, 'params');
+      }
+    },
+    Rule(rule) {
+      transformNode(rule, 'selector');
+    },
   }
 };
 
