@@ -46,8 +46,8 @@ module.exports = function getPostCSSPlugins({ variables, mixins, functions, env 
     'postcss-functions': {
       functions: functions
     },
-    /* https://github.com/postcss/postcss-color-function */
-    'postcss-color-function': {},
+    /* Inline PostCSS 8 port of postcss-color-function (legacy color() adjuster syntax) */
+    '@davidwells/config-postcss/src/plugins/color-function': {},
     /* https://github.com/postcss/postcss-custom-properties */
     'postcss-custom-properties': {},
     /* https://github.com/postcss/postcss-custom-media */
@@ -64,12 +64,6 @@ module.exports = function getPostCSSPlugins({ variables, mixins, functions, env 
     'postcss-nesting': {},
     /* https://github.com/postcss/postcss-nested */
     'postcss-nested': {},
-    /* https://github.com/iamvdo/pleeease-filters */
-    'pleeease-filters': {},
-    /* https://github.com/postcss/postcss-selector-matches */
-    'postcss-selector-matches': {},
-    /* https://github.com/postcss/postcss-selector-not */
-    'postcss-selector-not': {},
     /* https://github.com/luisrudge/postcss-flexbugs-fixes */
     'postcss-flexbugs-fixes': {},
     // /* https://github.com/maximkoretskiy/postcss-initial */
