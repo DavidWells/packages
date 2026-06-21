@@ -1,6 +1,6 @@
 {
   "name": "@davidwells/postcss-math",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "PostCSS plugin for making calculations with math.js",
   "license": "MIT",
   "author": "Shaun Stanworth <shaun@freeformers.com>",
