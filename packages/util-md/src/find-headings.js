@@ -7,6 +7,8 @@ const HEADING_WITH_HTML = /^(?:(#{1,6})\s+(.*))$|(?:\n\n( *\S[\S ]*)\n([=]{3,}))
 
 const BEGINS_WITH_SETEXT = /^(?:(?:\n?( *\S[\S ]*)\n([=]{3,}))|(?:\n?( *\S[\S ]*)\n([-]{3,})))/
 
+const ASIDE_BLOCK = /<aside\b[^>]*>[\s\S]*?<\/aside>/gi
+
 const defaultOptions = {
   maxDepth: 6,
   // includeHtmlHeaders: true,
@@ -32,6 +34,11 @@ function findHeadings(text, userOpts = {}) {
       const cleanCode = item.block.replace(/[-#=<>]/g, 'X')
       text = text.replace(item.block, cleanCode)
     }
+  }
+
+  /* Asides are tangential content; skip their headings unless explicitly included */
+  if (!options.includeAsideHeadings) {
+    text = text.replace(ASIDE_BLOCK, (block) => block.replace(/[-#=<>]/g, 'X'))
   }
 
   // Handle Begins with setext header case....

@@ -1012,4 +1012,43 @@ Even more text here.
   assert.equal(parent2.level, 1)
 })
 
+
+test('excludes headings inside <aside> blocks by default', () => {
+  const md = `# Title
+
+<aside>
+## Inside Aside
+</aside>
+
+Some text
+
+## Real Section
+
+<aside data-sticky>
+### Deep Aside Heading
+</aside>
+
+### Real Subsection
+`
+  const headings = findHeadings(md)
+  const texts = headings.map((h) => h.text)
+  assert.not.ok(texts.includes('Inside Aside'), 'markdown heading inside aside should be excluded')
+  assert.not.ok(texts.includes('Deep Aside Heading'), 'heading inside attributed aside should be excluded')
+  assert.ok(texts.includes('Real Section'), 'heading outside aside remains')
+  assert.ok(texts.includes('Real Subsection'), 'later heading outside aside remains')
+})
+
+test('includeAsideHeadings option restores aside headings', () => {
+  const md = `<aside>
+## Inside Aside
+</aside>
+
+## Real Section
+`
+  const headings = findHeadings(md, { includeAsideHeadings: true })
+  const texts = headings.map((h) => h.text)
+  assert.ok(texts.includes('Inside Aside'))
+  assert.ok(texts.includes('Real Section'))
+})
+
 test.run()
