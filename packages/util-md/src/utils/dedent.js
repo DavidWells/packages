@@ -1,19 +1,22 @@
 
 
 function dedent(text = '', minIndent) {
-  // Split the string into lines and find the minimum common leading whitespace
-  const lines = text.split('\n')
+  if (!text) return text
 
+  const lines = text.split('\n')
   let min = minIndent || Number.MAX_VALUE
   for (const line of lines) {
-    if (line.trim().length === 0) continue // Skip empty lines
-    const leadingWhitespace = line.match(/^\s*/)[0]
-    min = Math.min(min, leadingWhitespace.length)
+    let index = 0
+    while (index < line.length && (line[index] === ' ' || line[index] === '\t')) {
+      index++
+    }
+    if (index === line.length) continue
+    if (index < min) min = index
+    if (min === 0) return text
   }
-  // Dedent the lines by removing the common leading whitespace
-  const dedentedLines = lines.map(line => line.slice(min))
-  // Join the dedented lines back into a single string
-  return dedentedLines.join('\n')
+
+  if (min === Number.MAX_VALUE) return lines.map(() => '').join('\n')
+  return lines.map(line => line.slice(min)).join('\n')
 }
 
 /*
