@@ -55,8 +55,8 @@ Determines if an item matches the specified matcher criteria.
 
 #### Parameters
 
-- `itemOrItems` (Item|Array<Item>): The item or array of items to check
-- `matcher` (ValidMatcher|Array<ValidMatcher>): The criteria to match against
+- `itemOrItems` (`Item|Array<Item>`): The item or array of items to check
+- `matcher` (`ValidMatcher|Array<ValidMatcher>`): The criteria to match against
 
 #### Returns
 
@@ -68,7 +68,7 @@ Find all items that match the specified criteria.
 
 #### Parameters
 
-- `items` (Array<Item>): Array of items to search
+- `items` (`Array<Item>`): Array of items to search
 - `matcher` (ValidMatcher): The criteria to match against
 
 #### Returns
@@ -81,7 +81,7 @@ Find the first item that matches the specified criteria.
 
 #### Parameters
 
-- `items` (Array<Item>): Array of items to search
+- `items` (`Array<Item>`): Array of items to search
 - `matcher` (ValidMatcher): The criteria to match against
 
 #### Returns
