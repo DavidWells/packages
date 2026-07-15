@@ -1,6 +1,6 @@
 {
   "name": "@davidwells/md-utils",
-  "version": "0.0.56",
+  "version": "0.0.57",
   "description": "Simple MD utils",
   "main": "src/index.js",
   "module": "src/index.mjs",
@@ -15,6 +15,22 @@
     "./parse": {
       "import": "./src/parse.mjs",
       "require": "./src/parse.js"
+    },
+    "./parse/frontmatter": {
+      "import": "./src/parse-with-frontmatter.mjs",
+      "require": "./src/parse-with-frontmatter.js"
+    },
+    "./parse/toc": {
+      "import": "./src/parse-with-toc.mjs",
+      "require": "./src/parse-with-toc.js"
+    },
+    "./parse/code-blocks": {
+      "import": "./src/parse-with-code-blocks.mjs",
+      "require": "./src/parse-with-code-blocks.js"
+    },
+    "./parse/links": {
+      "import": "./src/parse-with-links.mjs",
+      "require": "./src/parse-with-links.js"
     },
     "./frontmatter": {
       "import": "./src/frontmatter.mjs",
