@@ -11,12 +11,42 @@ function makeSlug(text = '') {
     .replace(/\s/g, '-')
 }
 
+/* GitHub-style heading slug: transliterate accented Latin, strip anything
+   outside [a-z0-9- ], collapse spaces/dashes, trim edge dashes, lowercase.
+   Must stay in sync with slugify in @davidwells/markdown lib/utils/slugify.js */
+function slugifyText(str = '') {
+  return str
+    .replace(/[ÀÁÂÃÄÅàáâãäåæÆ]/g, 'a')
+    .replace(/[çÇ]/g, 'c')
+    .replace(/[ðÐ]/g, 'd')
+    .replace(/[ÈÉÊËéèêë]/g, 'e')
+    .replace(/[ÏïÎîÍíÌì]/g, 'i')
+    .replace(/[Ññ]/g, 'n')
+    .replace(/[øØœŒÕõÔôÓóÒò]/g, 'o')
+    .replace(/[ÜüÛûÚúÙù]/g, 'u')
+    .replace(/[ŸÿÝý]/g, 'y')
+    .replace(/[^a-z0-9- ]/gi, '')
+    .trim()
+    .replace(/ +/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase()
+}
+
+/**
+ * Stateful slug generator: dedupes repeated slugs github-style (foo, foo-1, foo-2)
+ * @param {Function} [customFn] - Base slug function, defaults to makeSlug
+ * @returns {Function} slugger(text) -> unique slug. Also exposes:
+ *   slugger.reserve(exactId) - registers an id VERBATIM (no normalization) so
+ *   generated slugs suffix around it. For authored DOM ids / explicit heading ids.
+ *   slugger.base(text) - the base slug function without dedup state.
+ */
 function smartSlugger(customFn) {
   const usedSlugs = new Set()
   const occurrences = {}
   const slugFn = (typeof customFn === 'function') ? customFn : makeSlug
 
-  return (text) => {
+  const slugger = (text) => {
     const slug = slugFn(text)
 
     if (!usedSlugs.has(slug)) {
@@ -29,14 +59,30 @@ function smartSlugger(customFn) {
       occurrences[slug] = 0
     }
 
-    occurrences[slug] = occurrences[slug] + 1
-    const newSlug = `${slug}-${occurrences[slug]}`
+    /* Skip suffixes already taken by reserved ids or literal "-N" heading text */
+    let newSlug
+    do {
+      occurrences[slug] = occurrences[slug] + 1
+      newSlug = `${slug}-${occurrences[slug]}`
+    } while (usedSlugs.has(newSlug))
     usedSlugs.add(newSlug)
     return newSlug
   }
+
+  slugger.reserve = (exactId) => {
+    if (typeof exactId !== 'string' || exactId === '') {
+      return
+    }
+    usedSlugs.add(exactId)
+  }
+
+  slugger.base = slugFn
+
+  return slugger
 }
 
 module.exports = {
   makeSlug,
+  slugifyText,
   smartSlugger
 }

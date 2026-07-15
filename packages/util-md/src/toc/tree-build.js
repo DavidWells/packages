@@ -1,4 +1,4 @@
-const { smartSlugger } = require('../utils/slugger')
+const { smartSlugger, slugifyText } = require('../utils/slugger')
 const { findHeadings } = require('../find-headings')
 const { normalizeLevels } = require('./normalize')
 const { removeTocItems, matchItem } = require('./filter')
@@ -19,6 +19,7 @@ const defaultTocOptions = {
  * @param {string|Object} [opts.subSection] - Subsection to extract
  * @param {Array} [opts.headings] - Pre-parsed headings to use instead of finding them
  * @param {Function|Object} [opts.removeTocItems] - Function or object to filter out TOC items
+ * @param {Function} [opts.slugFn] - Base slug function, defaults to github-style slugifyText
  * @returns {Array<import('./index').TocItem>} Array of TOC items with the following structure:
  *   - level: number - The heading level
  *   - text: string - The heading text
@@ -55,7 +56,8 @@ function treeBuild(contents, opts = {}) {
     return []
   }
 
-  const slugFn = smartSlugger()
+  const slugFn = smartSlugger(options.slugFn || slugifyText)
+  const assignSlug = buildSlugAssigner(content, options, slugFn)
   const navigation = []
   const base = 0 // +firstHeading.level
   // console.log('base', base)
@@ -73,7 +75,7 @@ function treeBuild(contents, opts = {}) {
       level: newLevel,
       // index: heading.index,
       text: heading.text,
-      slug: slugFn(heading.text),
+      slug: assignSlug(heading),
       match: heading.match,
     }
     if (!options.excludeIndex) {
@@ -121,6 +123,80 @@ function treeBuild(contents, opts = {}) {
   return result
 }
 
+
+const EXPLICIT_HEADING_ID = /\[#([^\]]+)\]\s*$/
+
+/**
+ * Builds a slug assigner whose dedupe sequence covers EVERY heading in the
+ * document (no depth cap, no filter, asides included), so display filtering
+ * never shifts dedupe suffixes. Display headings are matched to their
+ * inventory entry by (level, text) in document order.
+ * @param {string} content - Full markdown content
+ * @param {Object} options - treeBuild options
+ * @param {Function} slugFn - smartSlugger instance
+ * @returns {Function} assignSlug(heading) -> slug
+ */
+function buildSlugAssigner(content, options, slugFn) {
+  const inventoryOptions = Object.assign({}, options, {
+    maxDepth: 6,
+    filter: undefined,
+    includeAsideHeadings: true,
+    headings: undefined,
+    excludeIndex: false,
+  })
+  const inventory = (content) ? findHeadings(content, inventoryOptions) : []
+  const assigned = []
+  for (let i = 0; i < inventory.length; i++) {
+    const heading = inventory[i]
+    if (!heading.text) {
+      continue
+    }
+    assigned.push({
+      index: heading.index,
+      level: heading.level,
+      text: heading.text,
+      slug: slugForHeading(heading.text, slugFn),
+      consumed: false,
+    })
+  }
+
+  return function assignSlug(heading) {
+    /* Both scans run over identical content, so source index is the exact join.
+       A same-(level, text) match is only a fallback for headings without an
+       index (excludeIndex or caller-provided opts.headings) - filtered-out
+       twins can steal those slots, indexed lookups cannot. */
+    for (let i = 0; i < assigned.length; i++) {
+      const entry = assigned[i]
+      if (entry.consumed) {
+        continue
+      }
+      if (heading.index != null ? entry.index === heading.index : (entry.level === heading.level && entry.text === heading.text)) {
+        entry.consumed = true
+        return entry.slug
+      }
+    }
+    /* Heading not in the inventory (caller-provided opts.headings without
+       matching content) - slug it directly on the shared sequence */
+    return slugForHeading(heading.text, slugFn)
+  }
+}
+
+/**
+ * Resolves one heading's slug: explicit [#custom-id] overrides the text-derived
+ * slug and is reserved so later text collisions suffix around it
+ * @param {string} text - Raw heading text
+ * @param {Function} slugFn - smartSlugger instance
+ * @returns {string} slug
+ */
+function slugForHeading(text, slugFn) {
+  const explicit = text.match(EXPLICIT_HEADING_ID)
+  if (explicit) {
+    const explicitId = slugFn.base(explicit[1]) || explicit[1]
+    slugFn.reserve(explicitId)
+    return explicitId
+  }
+  return slugFn(text)
+}
 
 function findClosestSection(subSections, targetSection) {
   let closest = subSections[0]

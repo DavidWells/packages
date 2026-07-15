@@ -705,5 +705,54 @@ test('treeBuild with subSection option', () => {
   ], 'tocWithObjectMatcher')
 })
 
+test('treeBuild - duplicate headings dedupe github-style', () => {
+  const md = '## Repeat\n\ntext\n\n## Repeat\n\ntext\n\n## Repeat\n\ntext'
+  const toc = treeBuild(md)
+  assert.equal(toc.map((item) => item.slug), ['repeat', 'repeat-1', 'repeat-2'])
+})
+
+test('treeBuild - cross-level duplicates dedupe in document order', () => {
+  const md = '## FAQ\n\nintro\n\n### FAQ\n\nnested\n\n## FAQ\n\noutro'
+  const toc = treeBuild(md)
+  const slugs = []
+  const walk = (items) => items.forEach((item) => {
+    slugs.push(item.slug)
+    if (item.children) walk(item.children)
+  })
+  walk(toc)
+  assert.equal(slugs, ['faq', 'faq-1', 'faq-2'])
+})
+
+test('treeBuild - explicit [#custom-id] is used and reserved', () => {
+  const md = '## Long title [#about-thing]\n\ntext\n\n## About Thing\n\ntext'
+  const toc = treeBuild(md)
+  assert.equal(toc.map((item) => item.slug), ['about-thing', 'about-thing-1'])
+})
+
+test('treeBuild - github base slugs (accents, underscores)', () => {
+  const md = '## Café au lait\n\ntext\n\n## foo_bar\n\ntext'
+  const toc = treeBuild(md)
+  assert.equal(toc.map((item) => item.slug), ['cafe-au-lait', 'foobar'])
+})
+
+test('treeBuild - opts.slugFn overrides the base slug function', () => {
+  const md = '## Hello World\n\ntext\n\n## Hello World\n\ntext'
+  const toc = treeBuild(md, { slugFn: (text) => text.toLowerCase().replace(/\s+/g, '_') })
+  assert.equal(toc.map((item) => item.slug), ['hello_world', 'hello_world-1'])
+})
+
+test('treeBuild - filtered-out headings still hold their dedupe position', () => {
+  /* h3 excluded by maxDepth must still consume the "repeat" base slug so the
+     visible headings keep the same suffixes the renderer will produce */
+  const md = '## Repeat\n\ntext\n\n### Repeat\n\nnested\n\n## Repeat\n\ntext'
+  const toc = treeBuild(md, { maxDepth: 2 })
+  assert.equal(toc.map((item) => item.slug), ['repeat', 'repeat-2'])
+})
+
+test('treeBuild - aside headings hold dedupe position but stay out of the toc', () => {
+  const md = '## Repeat\n\ntext\n\n<aside>\n\n## Repeat\n\naside text\n\n</aside>\n\n## Repeat\n\ntext'
+  const toc = treeBuild(md)
+  assert.equal(toc.map((item) => item.slug), ['repeat', 'repeat-2'])
+})
 
 test.run()

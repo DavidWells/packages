@@ -63,4 +63,44 @@ test('smartSlugger - maintains separate counters', () => {
   assert.is(slugger('Different Text'), 'different-text-1')
 })
 
+test('slugifyText - github-style slugs', () => {
+  const { slugifyText } = require('./slugger')
+  assert.is(slugifyText('Hello, World! (with punctuation?)'), 'hello-world-with-punctuation')
+  assert.is(slugifyText('Café au lait über cool'), 'cafe-au-lait-uber-cool')
+  assert.is(slugifyText('foo_bar'), 'foobar')
+  assert.is(slugifyText('99 bottles of beer'), '99-bottles-of-beer')
+  assert.is(slugifyText('中文标题'), '')
+  assert.is(slugifyText('Shipping 🚀 fast 🎉'), 'shipping-fast')
+  assert.is(slugifyText(''), '')
+  assert.is(slugifyText(), '')
+})
+
+test('smartSlugger - reserve registers exact ids verbatim', () => {
+  const { slugifyText } = require('./slugger')
+  const slugger = smartSlugger(slugifyText)
+  slugger.reserve('repeat')
+  assert.is(slugger('Repeat'), 'repeat-1')
+  assert.is(slugger('Repeat'), 'repeat-2')
+  /* Verbatim: no normalization applied to reserved value */
+  slugger.reserve('Weird ID!')
+  assert.is(slugger('weird id'), 'weird-id')
+})
+
+test('smartSlugger - generated suffixes skip reserved and literal -N slugs', () => {
+  const slugger = smartSlugger()
+  assert.is(slugger('thing-1'), 'thing-1')
+  assert.is(slugger('thing'), 'thing')
+  assert.is(slugger('thing'), 'thing-2')
+  const other = smartSlugger()
+  other.reserve('dup-1')
+  assert.is(other('dup'), 'dup')
+  assert.is(other('dup'), 'dup-2')
+})
+
+test('smartSlugger - exposes base fn without dedup state', () => {
+  const slugger = smartSlugger()
+  assert.is(slugger.base('Hello World'), 'hello-world')
+  assert.is(slugger.base('Hello World'), 'hello-world')
+})
+
 test.run()
