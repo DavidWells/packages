@@ -1,6 +1,6 @@
 {
   "name": "@davidwells/md-utils",
-  "version": "0.0.57",
+  "version": "0.0.58",
   "description": "Simple MD utils",
   "main": "src/index.js",
   "module": "src/index.mjs",
@@ -39,6 +39,10 @@
     "./dedent": {
       "import": "./src/utils/dedent.mjs",
       "require": "./src/utils/dedent.js"
+    },
+    "./slugger": {
+      "import": "./src/utils/slugger.mjs",
+      "require": "./src/utils/slugger.js"
     },
     "./toc": {
       "import": "./src/toc/index.mjs",
