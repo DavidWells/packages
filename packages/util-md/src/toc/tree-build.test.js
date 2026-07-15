@@ -466,7 +466,7 @@ test('Heading with footnote', () => {
     {
       level: 2,
       text: 'Headings with footnote[^footnote in heading] example',
-      slug: 'headings-with-footnotefootnote-in-heading-example',
+      slug: 'headings-with-footnote-example',
       match: '## Headings with footnote[^footnote in heading] example',
       index: 0
     }

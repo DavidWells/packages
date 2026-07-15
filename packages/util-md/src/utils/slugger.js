@@ -41,6 +41,24 @@ function slugifyText(str = '') {
  *   generated slugs suffix around it. For authored DOM ids / explicit heading ids.
  *   slugger.base(text) - the base slug function without dedup state.
  */
+
+/* Cleans raw heading text down to its rendered words so slugs never leak
+   markdown syntax, urls, tag names, or footnote markers into ids.
+   Must stay in sync with cleanHeadingText in @davidwells/markdown lib/utils/heading-text.js */
+const MARKDOWN_LINK_R = /\[([^\]]*)\]\(([^)]*)\)/g
+const FOOTNOTE_MARKER_R = /\[\^[^\]]*\]/g
+const EXPLICIT_HEADING_ID_R = /\[#([^\]]+)\]\s*$/
+const HTML_TAG_R = /<\/?[a-zA-Z][^>]*>/g
+
+function cleanHeadingText(rawText = '') {
+  return rawText
+    .replace(EXPLICIT_HEADING_ID_R, '')
+    .replace(FOOTNOTE_MARKER_R, '')
+    .replace(MARKDOWN_LINK_R, '$1')
+    .replace(HTML_TAG_R, '')
+    .trim()
+}
+
 function smartSlugger(customFn) {
   const usedSlugs = new Set()
   const occurrences = {}
@@ -83,6 +101,7 @@ function smartSlugger(customFn) {
 
 module.exports = {
   makeSlug,
+  cleanHeadingText,
   slugifyText,
   smartSlugger
 }

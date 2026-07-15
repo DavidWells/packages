@@ -818,37 +818,37 @@ test('sixLayers', () => {
     {
       level: 1,
       text: '[Heading 1 stacked](https://google.com)',
-      slug: 'heading-1-stackedhttpsgooglecom',
+      slug: 'heading-1-stacked',
       match: '# [Heading 1 stacked](https://google.com)',
       children: [
         {
           level: 2,
           text: '[Heading 2 stacked](https://google.com)',
-          slug: 'heading-2-stackedhttpsgooglecom',
+          slug: 'heading-2-stacked',
           match: '## [Heading 2 stacked](https://google.com)',
           children: [
             {
               level: 3,
               text: '[Heading 3 stacked](https://google.com)',
-              slug: 'heading-3-stackedhttpsgooglecom',
+              slug: 'heading-3-stacked',
               match: '### [Heading 3 stacked](https://google.com)',
               children: [
                 {
                   level: 4,
                   text: '[Heading 4 stacked](https://google.com)',
-                  slug: 'heading-4-stackedhttpsgooglecom',
+                  slug: 'heading-4-stacked',
                   match: '#### [Heading 4 stacked](https://google.com)',
                   children: [
                     {
                       level: 5,
                       text: '[Heading 5 stacked](https://google.com)',
-                      slug: 'heading-5-stackedhttpsgooglecom',
+                      slug: 'heading-5-stacked',
                       match: '##### [Heading 5 stacked](https://google.com)',
                       children: [
                         {
                           level: 6,
                           text: '[Heading 6 stacked](https://google.com)',
-                          slug: 'heading-6-stackedhttpsgooglecom',
+                          slug: 'heading-6-stacked',
                           match: '###### [Heading 6 stacked](https://google.com)',
                         },
                       ],

@@ -1,4 +1,4 @@
-const { smartSlugger, slugifyText } = require('../utils/slugger')
+const { smartSlugger, slugifyText, cleanHeadingText } = require('../utils/slugger')
 const { findHeadings } = require('../find-headings')
 const { normalizeLevels } = require('./normalize')
 const { removeTocItems, matchItem } = require('./filter')
@@ -195,7 +195,7 @@ function slugForHeading(text, slugFn) {
     slugFn.reserve(explicitId)
     return explicitId
   }
-  return slugFn(text)
+  return slugFn(cleanHeadingText(text))
 }
 
 function findClosestSection(subSections, targetSection) {
