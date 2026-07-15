@@ -3,14 +3,35 @@
   "version": "0.0.56",
   "description": "Simple MD utils",
   "main": "src/index.js",
+  "module": "src/index.mjs",
+  "sideEffects": false,
   "author": "David Wells",
   "license": "MIT",
   "exports": {
-    ".": "./src/index.js",
-    "./parse": "./src/parse.js",
-    "./frontmatter": "./src/frontmatter.js",
-    "./dedent": "./src/utils/dedent.js",
-    "./toc": "./src/toc/index.js",
+    ".": {
+      "import": "./src/index.mjs",
+      "require": "./src/index.js"
+    },
+    "./parse": {
+      "import": "./src/parse.mjs",
+      "require": "./src/parse.js"
+    },
+    "./frontmatter": {
+      "import": "./src/frontmatter.mjs",
+      "require": "./src/frontmatter.js"
+    },
+    "./dedent": {
+      "import": "./src/utils/dedent.mjs",
+      "require": "./src/utils/dedent.js"
+    },
+    "./toc": {
+      "import": "./src/toc/index.mjs",
+      "require": "./src/toc/index.js"
+    },
+    "./toc/normalize": {
+      "import": "./src/toc/normalize.mjs",
+      "require": "./src/toc/normalize.js"
+    },
     "./find-code-blocks": "./src/find-code-blocks.js",
     "./find-headings": "./src/find-headings.js",
     "./find-frontmatter": "./src/find-frontmatter.js",
