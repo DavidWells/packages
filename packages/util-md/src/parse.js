@@ -30,11 +30,13 @@ function parseMarkdown(text, opts = {}) {
   try {
     result = parseFrontmatter(text)
   } catch (err) {
-    console.log(`Broken frontmatter in ${filePath}...`)
+    /* stderr so single-line-stdout consumers (render probes) stay parseable */
+    console.error(`Broken frontmatter in ${filePath}...`)
     errors.push(err.message)
     alreadySetError = true
   }
-  const { data, content, frontMatterRaw = '' } = result
+  /* Unparseable frontmatter degrades to "whole doc is content", never undefined */
+  const { data, content = text, frontMatterRaw = '' } = result
   if (!data || !Object.keys(data).length) {
     if (!alreadySetError) {
       errors.push(`Missing or broken frontmatter in ${filePath}. Double check file for --- frontmatter tags`)

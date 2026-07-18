@@ -156,4 +156,13 @@ test('opts - includeLinks false', async () => {
 //   // deepLog(x)
 // })
 
+test('broken frontmatter falls back to raw content instead of undefined', () => {
+  const md = '---\n**bold run not yaml\n---\n```ts\nconst a = 1\n```'
+  const post = parseMarkdown(md, { filePath: 'x.md' })
+  assert.type(post.content, 'string')
+  assert.ok(post.content.includes('```ts'), 'content keeps body: ' + JSON.stringify(post.content))
+  assert.ok(post.errors.length > 0, 'error recorded')
+})
+
 test.run()
+
