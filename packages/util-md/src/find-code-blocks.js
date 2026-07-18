@@ -19,9 +19,9 @@ const REMOVE_CODE_BLOCK_RE = /^(?:[A-Za-z \t]*)?(```(?:[A-Za-z]*)?\n(?:[\s\S]*?)
 // remove inline `code` blocks
 const REMOVE_INLINE_CODE_BLOCK = /`[^`\n]*`/g
 // https://regex101.com/r/ydaz8U/8
-const CODE_BLOCK_RE = /^(>(?: >)*)?([A-Za-z \t]*)([`~]{3,4})([A-Za-z]*)?(.*)?\n\s*([`~]{3,4})?\s*([\s\S]*?)(\6)?[\s]*?(\3)([A-Za-z \t]*)*$/gm
+const CODE_BLOCK_RE = /^(>(?: >)*)?([A-Za-z \t]*)([`~]{3,4})([A-Za-z]*)?(.*)?\n(?:([`~]{3,4})\s*)?([\s\S]*?)(\6)?[\s]*?(\3)([A-Za-z \t]*)*$/gm
 // https://regex101.com/r/ydaz8U/14
-const CODE_BLOCK_HTML_RE = /^(>(?: >)*)?([A-Za-z \t]*)([`~]{3,4})([A-Za-z]*)?(.*)?\n\s*([`~]{3,4})?\s*([\s\S]*?)(\6)?[\s]*?(\3)([A-Za-z \t]*)*$|[^`](?:<(pre)\b([^>]*)>*(?:>\s*(<code\b([^>]*)>)?([\s\S]*?)(<\/code>\s*)?<\/pre>))/gm
+const CODE_BLOCK_HTML_RE = /^(>(?: >)*)?([A-Za-z \t]*)([`~]{3,4})([A-Za-z]*)?(.*)?\n(?:([`~]{3,4})\s*)?([\s\S]*?)(\6)?[\s]*?(\3)([A-Za-z \t]*)*$|[^`](?:<(pre)\b([^>]*)>*(?:>\s*(<code\b([^>]*)>)?([\s\S]*?)(<\/code>\s*)?<\/pre>))/gm
 // https://regex101.com/r/ZEMXNE/3
 const MATCH_JS_COMMENT = /^(\/\*[\s\S]*?\*\/|^(\/\/ +[^\n]+(?:\n\/\/*[^\n]+)*)+)\n?/
 
