@@ -289,3 +289,13 @@ function Counter() {
 })
 
 test.run()
+
+test('preserves leading whitespace on the first code line', () => {
+  const md = '```diff\n      }\n      const normalized = normalizeSmartQuotes(output)\n-     return normalized\n```'
+  const result = findCodeBlocks(md)
+  assert.is(result.blocks.length, 1)
+  assert.is(
+    result.blocks[0].code,
+    '      }\n      const normalized = normalizeSmartQuotes(output)\n-     return normalized'
+  )
+})
