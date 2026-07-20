@@ -259,6 +259,7 @@ test('getFilePaths with REGEX /\.test\.js?$/', async () => {
     ],
     ignore: [
       /node_modules/,
+      /additional/,
     ],
   })
   const foundFiles = convertToRelative(files, ROOT_DIR).sort()
@@ -277,6 +278,7 @@ test('getFilePaths with REGEX string', async () => {
     ],
     ignore: [
       /node_modules/,
+      /additional/,
     ],
   })
   const foundFiles = convertToRelative(files, ROOT_DIR).sort()
@@ -298,7 +300,8 @@ test('getFilePaths /\.mdx?$/, /\.test\.js$/', async () => {
     ignore: [
       // /^node_modules\//,
       /node_modules/,
-      // /\.git/, 
+      /additional/,
+      // /\.git/,
       // /NOTES\.md/
     ],
     //excludeGitIgnore: true,
@@ -363,6 +366,7 @@ test('getFilePaths glob string', async () => {
     ignore: [
       // /^node_modules\//,
       /node_modules/,
+      /additional/,
       // /(.*)\.js$/,
       // /\.git/,
       // /NOTES\.md/

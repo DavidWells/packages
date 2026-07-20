@@ -19,6 +19,7 @@ test('return JS', async () => {
       'node_modules',
       './tests/fixtures/**.js',
       /!!.*\.js$/, // multiple-negation/!unicorn.js'
+      /additional/,
       // '/tests/fixtures/**/**.js',
       // '/tests',
       // './tests',
