@@ -1,0 +1,59 @@
+{
+  "name": "@davidwells/code-inspector-plugin",
+  "version": "1.5.1",
+  "description": "Vite code inspector plugin that preserves source-path attributes in production builds",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test",
+    "prepublishOnly": "npm test",
+    "release:patch": "npm version patch && npm publish --access public",
+    "release:minor": "npm version minor && npm publish --access public",
+    "release:major": "npm version major && npm publish --access public"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DavidWells/packages.git",
+    "directory": "packages/code-inspector-plugin"
+  },
+  "homepage": "https://github.com/DavidWells/packages/tree/master/packages/code-inspector-plugin#readme",
+  "bugs": {
+    "url": "https://github.com/DavidWells/packages/issues"
+  },
+  "keywords": [
+    "code-inspector",
+    "vite",
+    "plugin",
+    "source-code",
+    "developer-tools"
+  ],
+  "author": "David Wells",
+  "license": "MIT",
+  "dependencies": {
+    "@code-inspector/core": "1.5.1",
+    "@code-inspector/vite": "1.5.1"
+  },
+  "peerDependencies": {
+    "vite": ">=4"
+  },
+  "devDependencies": {
+    "vite": "8.2.1"
+  }
+}

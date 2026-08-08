@@ -8,6 +8,7 @@
 * [@davidwells/components-input](packages/Input) - React Input Component
 * [@davidwells/components-example](packages/_Example) - form component
 * [babel-plugin-style-guard](packages/babel-plugin-style-guard) - Guard CSS modules against potentially missing styles in dev mode
+* [@davidwells/code-inspector-plugin](packages/code-inspector-plugin) - Vite code inspector plugin that preserves source-path attributes in production builds
 * [@davidwells/eslint-config](packages/config-eslint) - An ESLint shareable config
 * [@davidwells/config-postcss](packages/config-postcss) - Reusable postcss config
 * [@davidwells/prettier-config](packages/config-prettier) - My personal Prettier config
