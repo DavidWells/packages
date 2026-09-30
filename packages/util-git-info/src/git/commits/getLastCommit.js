@@ -1,4 +1,4 @@
-const { executeCommand } = require('../utils/exec')
+const { executeCommand, startCommand } = require('../utils/exec')
 const { parse, getPrettyFormat, removeSignedOffBy } = require('./utils/pretty-format')
 // Via https://github.com/seymen/git-last-commit/blob/master/source/index.js
 
@@ -18,14 +18,25 @@ const { parse, getPrettyFormat, removeSignedOffBy } = require('./utils/pretty-fo
  * console.log('SHA:', lastCommit.sha)
  */
 function getLastCommit(options) {
+  return startLastCommit(options).then(settle => settle())
+}
+
+/**
+ * Starts the getLastCommit git commands. Resolves to a `settle` function returning
+ * getLastCommit's result; errors are only logged/rejected when it is called.
+ * @param {Object} [options] - Options
+ * @param {string} [options.cwd] - Working directory (defaults to process.cwd())
+ * @returns {Promise<() => Promise<CommitInfo>>}
+ */
+function startLastCommit(options) {
   const command = `git log -1 --pretty=format:"${getPrettyFormat()}" && git rev-parse --abbrev-ref HEAD && git tag --contains HEAD`
-  return new Promise((resolve, reject) => {
-    const opts = options ? { dst: options.cwd } : undefined
-    executeCommand(command, opts, (err, res) => {
+  const opts = options ? { dst: options.cwd } : undefined
+  return startCommand(command, opts).then(handle => () => new Promise((resolve, reject) => {
+    handle((err, res) => {
       if (err) return reject(err)
       resolve(parse(res))
     })
-  })
+  }))
 }
 
 /**
@@ -98,6 +109,7 @@ if (require.main === module) {
 
 module.exports = {
   getLastCommit,
+  startLastCommit,
   getCurrentRevision,
   getCurrentCommitMessage
 }

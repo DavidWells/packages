@@ -1,5 +1,5 @@
 const { getFirstCommit } = require('./getFirstCommit')
-const { getLastCommit } = require('./getLastCommit')
+const { startLastCommit } = require('./getLastCommit')
 const { localGetCommits } = require('../localGetCommits')
 
 /**
@@ -18,9 +18,12 @@ const { localGetCommits } = require('../localGetCommits')
  * })
  */
 async function getAllCommits(options) {
+  // Run the last-commit lookup alongside the first, but settle it (and log any
+  // failure) only after the first succeeds, as when they ran sequentially
+  const lastCommitStarted = startLastCommit(options)
   const firstCommit = await getFirstCommit(options)
   // console.log('firstCommit', firstCommit)
-  const lastCommit = await getLastCommit(options)
+  const lastCommit = await (await lastCommitStarted)()
   // console.log('lastCommit', lastCommit)
   // Only the commit list is needed, so skip the full-history diff gitDetails would compute
   const commits = await localGetCommits(
