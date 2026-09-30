@@ -1,6 +1,6 @@
 const { getFirstCommit } = require('./getFirstCommit')
 const { getLastCommit } = require('./getLastCommit')
-const { gitDetails } = require('../getDetails')
+const { localGetCommits } = require('../localGetCommits')
 
 /**
  * @typedef {import('../../types').CommitInfo} CommitInfo
@@ -22,16 +22,15 @@ async function getAllCommits(options) {
   // console.log('firstCommit', firstCommit)
   const lastCommit = await getLastCommit(options)
   // console.log('lastCommit', lastCommit)
-  const data = await gitDetails({
+  // Only the commit list is needed, so skip the full-history diff gitDetails would compute
+  const commits = await localGetCommits(
     // base === now
-    base: lastCommit.sha,
+    lastCommit.sha,
     // head == start
-    head: firstCommit.sha,
-    cwd: options && options.cwd
-  })
-  // console.log('data.commits', data.commits.reverse())
-  // process.exit(1)
-  return [firstCommit].concat(data.commits.reverse()).concat(lastCommit)
+    firstCommit.sha,
+    options && options.cwd
+  )
+  return [firstCommit].concat(commits.reverse()).concat(lastCommit)
 }
 
 /*
