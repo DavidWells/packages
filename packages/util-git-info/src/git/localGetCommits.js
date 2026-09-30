@@ -1,4 +1,3 @@
-const JSON5 = require('json5')
 const { spawn } = require('child_process')
 const { debug } = require('../debug')
 const { removeSignedOffBy } = require('./commits/utils/pretty-format')
@@ -27,6 +26,45 @@ const formatJSON = `{ "sha": "${sha}", "parents": "${parents}", ${author}, ${com
   committedOn: a[6],
 */
 
+/* Fields and records are split on ASCII unit/record separators, which never appear in
+   commit metadata or messages, so no escaping is needed (the JSON-shaped format above is
+   kept for formatJSON/attemptToFix callers). */
+const FIELD = '\x1f'
+const RECORD = '\x1e'
+const FIELDS = [sha, parents, authorName, authorEmail, authorDate, committerName, committerEmail, committerDate, subject, message, body]
+const formatRecords = FIELDS.join('%x1f') + '%x1e'
+
+/**
+ * Parse `git log --pretty=format:<formatRecords>` output
+ * @param {string} output
+ * @returns {Array<object>}
+ */
+function parseCommitRecords(output) {
+  return output
+    .split(RECORD)
+    .map((record) => record.replace(/^\r?\n/, ''))
+    .filter((record) => record.length > 0)
+    .map((record) => {
+      const f = record.split(FIELD)
+      return {
+        sha: f[0],
+        parents: f[1] ? f[1].split(' ') : [],
+        author: { name: f[2], email: f[3] },
+        committer: { name: f[5], email: f[6] },
+        subject: stripSignedOffBy(f[8] || ''),
+        sanitizedSubject: f[9] || '',
+        body: stripSignedOffBy(f[10] || ''),
+        authoredOn: f[4],
+        committedOn: f[7],
+      }
+    })
+}
+
+/** Remove "Signed-off-by: Name <email>" trailers (real newlines). */
+function stripSignedOffBy(text) {
+  return text.replace(/(\n)?Signed-off-by: (.*) <(.*)>(\n)?/gmi, '')
+}
+
 /**
  * Get commits between two refs
  * @param {string} base - Base ref
@@ -34,83 +72,23 @@ const formatJSON = `{ "sha": "${sha}", "parents": "${parents}", ${author}, ${com
  * @param {string} [cwd] - Working directory (defaults to process.cwd())
  */
 const localGetCommits = (base, head, cwd) => {
-  // @TODO add exclude "subject" and "body" option to ignore parsing issues
   return new Promise(resolve => {
-    const args = ['log', `${base}...${head}`, `--pretty=format:${formatJSON}`]
+    const args = ['log', `${base}...${head}`, `--pretty=format:${formatRecords}`]
     const child = spawn('git', args, { env: process.env, cwd: cwd || process.cwd() })
-    let stdOut = ''
+    // Buffer everything: a chunk can end mid-record, so parse only once git is done.
+    const out = []
     let stdErr = ''
-    let realCommits = []
     d('> git', args.join(' '))
-    child.stdout.on('data', async data => {
-      data = data.toString()
-      stdOut += data.toString()
-
-      let jsonValue = data.substring(0, data.length - 1)
-
-      /* If JSON has new lines we must remove them  */
-      // was /"body":\s+?("[\s\S]*?")/gm
-      const pattern = /("[\s\S\r]*?")/gm
-      const matches = jsonValue.match(pattern)
-      const singleMatch = /("[\s\S\r]*?")/
-      for (let i = 0; i < matches.length; i++) {
-        const foundMatch = singleMatch.exec(matches[i])
-        if (foundMatch && foundMatch[1]) {
-          /* Replace all new lines */
-          // Trim outer quotes to fix inner quotes. Watch https://github.com/DavidWells/components/commit/2355073007f6a17d6a32235b1f4ddf5a2c2b90ff change
-          let fixedValue = foundMatch[1].replace(/^"/, '').replace(/"$/, '')
-            // foundMatch[1].substring(1, foundMatch[1].length - 1)
-            /* Remove all new line characters & use \n placeholder */
-            .replace(/(\r\n|\n|\r)/gm, '\\n')
-            // Replace inner double quotes
-            .replace(/"/gm, '\\"')
-
-          // .replace(/"/gm, '\\"')
-          /* Remove signed off by git messages */
-          fixedValue = removeSignedOffBy(fixedValue)
-          // console.log('fixedValue', fixedValue)
-          jsonValue = jsonValue.replace(foundMatch[1], `"${fixedValue}"`)
-        }
-      }
-
-      // remove trailing comma, and wrap into an array
-      const asJSONString = `[${jsonValue}]`
-      let commits = []
-      try {
-        commits = JSON5.parse(asJSONString)
-      } catch (err) {
-        try {
-          commits = attemptToFix(jsonValue)
-        } catch (e) {
-          console.log('JSON parse error')
-          console.log(err.message)
-          console.log(asJSONString)
-          throw new Error(err)
-        }
-      }
-      realCommits = realCommits.concat(commits.map(c =>
-        Object.assign(Object.assign({}, c), { parents: c.parents.split(' ') })
-      ))
-    })
-    child.stderr.on('data', data => {
-      stdErr += data.toString()
-      console.error(`Could not get commits from git between ${base} and ${head}`)
-      throw new Error(data.toString())
-    })
+    child.stdout.on('data', (data) => { out.push(data) })
+    child.stderr.on('data', (data) => { stdErr += data.toString() })
     child.on('close', (code) => {
-      if (code === 0) {
-        // console.log(`exit_code = ${code}`);
-        // console.log('no commits found')
-        return resolve(realCommits)
-      }
-      // console.log(`exit_code = ${code}`);
+      if (code === 0) return resolve(parseCommitRecords(Buffer.concat(out).toString('utf8')))
+      console.error(`Could not get commits from git between ${base} and ${head}`)
       return resolve(stdErr)
     })
     child.on('error', (error) => {
       stdErr += error.toString()
-      if (stdOut || stdErr) {
-        console.log(error.toString())
-      }
+      console.log(error.toString())
     })
   })
 }
@@ -169,3 +147,5 @@ function getMatches(str, myRegex) {
 module.exports.formatJSON = formatJSON
 module.exports.localGetCommits = localGetCommits
 module.exports.attemptToFix = attemptToFix
+module.exports.parseCommitRecords = parseCommitRecords
+module.exports.formatRecords = formatRecords
