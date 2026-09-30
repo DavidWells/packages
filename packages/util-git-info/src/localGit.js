@@ -84,13 +84,22 @@ class LocalGit {
     const head = this.head
     const cwd = this.cwd
 
+    // Independent git processes: start them together, but await in the original
+    // order so the same failure surfaces first. Noop catches prevent unhandled
+    // rejections for promises we never reach if an earlier await throws.
+    const diffPromise = this.getGitDiff()
+    const commitsPromise = localGetCommits(base, head, cwd)
+    const gitRootPromise = getGitRoot(cwd)
+    commitsPromise.catch(() => {})
+    gitRootPromise.catch(() => {})
+
     const t0 = DEBUG_TIMING ? Date.now() : 0
-    const diff = await this.getGitDiff()
+    const diff = await diffPromise
     const t1 = DEBUG_TIMING ? Date.now() : 0
     if (DEBUG_TIMING) console.log(`    ⏱️  getGitDiff: ${t1 - t0}ms`)
 
     // Array of commits
-    const commits = await localGetCommits(base, head, cwd)
+    const commits = await commitsPromise
     const t2 = DEBUG_TIMING ? Date.now() : 0
     if (DEBUG_TIMING) console.log(`    ⏱️  localGetCommits: ${t2 - t1}ms`)
 
@@ -99,7 +108,7 @@ class LocalGit {
     const t3 = DEBUG_TIMING ? Date.now() : 0
     if (DEBUG_TIMING) console.log(`    ⏱️  diffToGitJSONDSL: ${t3 - t2}ms (parsing ${diff.split('\n').length} lines of diff)`)
 
-    const gitRoot = await getGitRoot(cwd)
+    const gitRoot = await gitRootPromise
 
     const config = {
       repo: gitRoot,
