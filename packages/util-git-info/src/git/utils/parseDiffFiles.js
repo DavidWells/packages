@@ -61,16 +61,17 @@ function parseDiffFiles(input) {
     if (c === 32 || (end > pos && c !== 45 && c !== 43 && c !== 64 && WHITESPACE.test(input[pos]))) {
       if (hasChunk) chunkHasChanges = true
     } else if (c === 45) { // '-'
-      const line = input.slice(pos, end)
-      if (FROM_FILE.test(line)) {
+      // Only a '---' prefix can be a header; skip slicing ordinary removed lines
+      if (pos + 3 < end && input.charCodeAt(pos + 1) === 45 && input.charCodeAt(pos + 2) === 45 && FROM_FILE.test(input.slice(pos, end))) {
+        const line = input.slice(pos, end)
         restart()
         file.from = parseFileFallback(line)
       } else if (hasChunk) {
         chunkHasChanges = true
       }
     } else if (c === 43) { // '+'
-      const line = input.slice(pos, end)
-      if (TO_FILE.test(line)) {
+      if (pos + 3 < end && input.charCodeAt(pos + 1) === 43 && input.charCodeAt(pos + 2) === 43 && TO_FILE.test(input.slice(pos, end))) {
+        const line = input.slice(pos, end)
         restart()
         file.to = parseFileFallback(line)
       } else if (hasChunk) {
