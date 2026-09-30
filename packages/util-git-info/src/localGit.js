@@ -3,7 +3,7 @@ const { gitJSONToGitDSL } = require('./git/gitJSONToGitDSL')
 const { diffToGitJSONDSL } = require('./git/diffToGitJSONDSL')
 const { localGetDiff } = require('./git/localGetDiff')
 const { localGetFileAtSHA } = require('./git/localGetFileAtSHA')
-const { localGetCommits } = require('./git/localGetCommits')
+const { startLocalGetCommits } = require('./git/localGetCommits')
 const { localGetNumstat } = require('./git/localGetNumstat')
 const { getGitRoot } = require('./git/getGitRoot')
 
@@ -85,12 +85,12 @@ class LocalGit {
     const cwd = this.cwd
 
     // Independent git processes: start them together, but await in the original
-    // order so the same failure surfaces first. Noop catches prevent unhandled
-    // rejections for promises we never reach if an earlier await throws.
+    // order so the same failure surfaces first. Commit failures are only logged
+    // once we reach them (as before), and the noop catch prevents an unhandled
+    // rejection for the root lookup if an earlier await throws.
     const diffPromise = this.getGitDiff()
-    const commitsPromise = localGetCommits(base, head, cwd)
+    const commitsStarted = startLocalGetCommits(base, head, cwd)
     const gitRootPromise = getGitRoot(cwd)
-    commitsPromise.catch(() => {})
     gitRootPromise.catch(() => {})
 
     const t0 = DEBUG_TIMING ? Date.now() : 0
@@ -99,7 +99,7 @@ class LocalGit {
     if (DEBUG_TIMING) console.log(`    ⏱️  getGitDiff: ${t1 - t0}ms`)
 
     // Array of commits
-    const commits = await commitsPromise
+    const commits = (await commitsStarted)()
     const t2 = DEBUG_TIMING ? Date.now() : 0
     if (DEBUG_TIMING) console.log(`    ⏱️  localGetCommits: ${t2 - t1}ms`)
 

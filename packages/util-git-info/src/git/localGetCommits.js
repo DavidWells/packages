@@ -66,12 +66,15 @@ function stripSignedOffBy(text) {
 }
 
 /**
- * Get commits between two refs
+ * Start `git log` between two refs. Resolves to a `settle` function that returns
+ * localGetCommits' result, and only logs a failure when called, so callers can
+ * overlap the git process with other work without logging for results they never use.
  * @param {string} base - Base ref
  * @param {string} head - Head ref
  * @param {string} [cwd] - Working directory (defaults to process.cwd())
+ * @returns {Promise<() => any>} settle returns the commits array, or git stderr on failure
  */
-const localGetCommits = (base, head, cwd) => {
+const startLocalGetCommits = (base, head, cwd) => {
   return new Promise(resolve => {
     const args = ['log', `${base}...${head}`, `--pretty=format:${formatRecords}`]
     const child = spawn('git', args, { env: process.env, cwd: cwd || process.cwd() })
@@ -82,15 +85,30 @@ const localGetCommits = (base, head, cwd) => {
     child.stdout.on('data', (data) => { out.push(data) })
     child.stderr.on('data', (data) => { stdErr += data.toString() })
     child.on('close', (code) => {
-      if (code === 0) return resolve(parseCommitRecords(Buffer.concat(out).toString('utf8')))
-      console.error(`Could not get commits from git between ${base} and ${head}`)
-      return resolve(stdErr)
+      if (code === 0) {
+        const commits = parseCommitRecords(Buffer.concat(out).toString('utf8'))
+        return resolve(() => commits)
+      }
+      return resolve(() => {
+        console.error(`Could not get commits from git between ${base} and ${head}`)
+        return stdErr
+      })
     })
     child.on('error', (error) => {
       stdErr += error.toString()
       console.log(error.toString())
     })
   })
+}
+
+/**
+ * Get commits between two refs
+ * @param {string} base - Base ref
+ * @param {string} head - Head ref
+ * @param {string} [cwd] - Working directory (defaults to process.cwd())
+ */
+const localGetCommits = (base, head, cwd) => {
+  return startLocalGetCommits(base, head, cwd).then(settle => settle())
 }
 
 const FIX_SUBJECT = /("subject":)([\s\S]*?)*?("sanitizedSubject")/g
@@ -146,6 +164,7 @@ function getMatches(str, myRegex) {
 
 module.exports.formatJSON = formatJSON
 module.exports.localGetCommits = localGetCommits
+module.exports.startLocalGetCommits = startLocalGetCommits
 module.exports.attemptToFix = attemptToFix
 module.exports.parseCommitRecords = parseCommitRecords
 module.exports.formatRecords = formatRecords
