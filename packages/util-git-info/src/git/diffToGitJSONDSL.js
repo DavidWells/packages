@@ -1,4 +1,4 @@
-const parseDiff = require('parse-diff')
+const { parseDiffFiles } = require('./utils/parseDiffFiles')
 const includes = require('lodash.includes')
 /**
  * This function is essentially a 'go from a diff to some simple structured data'
@@ -6,7 +6,8 @@ const includes = require('lodash.includes')
  */
 
 module.exports.diffToGitJSONDSL = (diff, commits) => {
-  const fileDiffs = parseDiff(diff)
+  // Only file names/flags are needed here, so skip building chunk/change objects
+  const fileDiffs = parseDiffFiles(diff)
   const addedDiffs = fileDiffs.filter(diff => diff['new'])
   const removedDiffs = fileDiffs.filter(diff => diff['deleted'])
   // Renames have both from and to, but no new/deleted flag, and paths differ
