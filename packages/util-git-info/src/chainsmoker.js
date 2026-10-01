@@ -1,5 +1,7 @@
 // vendored from https://github.com/paulmelnikow/chainsmoker
-const micromatch = require('micromatch')
+// micromatch (~4.5ms to require) is loaded on the first fileMatch() call, not when
+// git-er-done is required: many callers never glob-match the changed files.
+let micromatch
 // const mapValues = require('lodash.mapvalues')
 
 const isExclude = p => p.startsWith('!')
@@ -32,6 +34,7 @@ module.exports = function chainsmoker(keyedPaths) {
    * fileMatch('src/**\/*', '!**\/*.test.js')
    */
   const matchFunction = (...globPatterns) => {
+    if (!micromatch) micromatch = require('micromatch')
     /** @type {string[]} */
     const patterns = globPatterns.flatMap((glob) => glob)
     const excludePatterns = patterns.filter(p => isExclude(p))
