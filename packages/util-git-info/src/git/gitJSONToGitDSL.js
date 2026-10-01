@@ -1,12 +1,10 @@
 const os = require('os')
-const parseDiff = require('parse-diff')
+// parse-diff, rfc6902, jsonpointer and json5 (~5ms together) are required at their use
+// sites inside the JSON/structured diff helpers, which most callers never invoke.
 const includes = require('lodash.includes')
 const isobject = require('lodash.isobject')
 const keys = require('lodash.keys')
 const memoize = require('lodash.memoize')
-const jsonDiff = require('rfc6902')
-const jsonpointer = require('jsonpointer')
-const JSON5 = require('json5')
 const chainsmoker = require('../chainsmoker')
 
 module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
@@ -42,8 +40,8 @@ module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
     )
     // Parse JSON. `fileContents` returns empty string for files that are
     // missing in one of the refs, ie. when the file is created or deleted.
-    const baseJSON = baseFile === '' ? {} : JSON5.parse(baseFile)
-    const headJSON = headFile === '' ? {} : JSON5.parse(headFile)
+    const baseJSON = baseFile === '' ? {} : require('json5').parse(baseFile)
+    const headJSON = headFile === '' ? {} : require('json5').parse(headFile)
     // Tiny bit of hand-waving here around the types. JSONPatchOperation is
     // a simpler version of all operations inside the rfc6902 d.ts. Users
     // of danger wont care that much, so I'm smudging the classes slightly
@@ -51,7 +49,7 @@ module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
     return {
       before: baseFile === '' ? null : baseJSON,
       after: headFile === '' ? null : headJSON,
-      diff: jsonDiff.createPatch(baseJSON, headJSON)
+      diff: require('rfc6902').createPatch(baseJSON, headJSON)
     }
   }
   /**
@@ -77,8 +75,8 @@ module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
           ? path
           : pathSteps.slice(0, pathSteps.length - 1).join('/')
       const diff = {
-        after: jsonpointer.get(after, backAStepPath) || null,
-        before: jsonpointer.get(before, backAStepPath) || null
+        after: require('jsonpointer').get(after, backAStepPath) || null,
+        before: require('jsonpointer').get(before, backAStepPath) || null
       }
       const emptyValueOfCounterpart = other => {
         if (Array.isArray(other)) {
@@ -105,7 +103,7 @@ module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
         diff.added = afterKeys.filter(o => !includes(beforeKeys, o))
         diff.removed = beforeKeys.filter(o => !includes(afterKeys, o))
       }
-      jsonpointer.set(accumulator, backAStepPath, diff)
+      require('jsonpointer').set(accumulator, backAStepPath, diff)
       return accumulator
     }, Object.create(null))
   }
@@ -164,7 +162,7 @@ module.exports.gitJSONToGitDSL = (gitJSONRep, config) => {
       }
     } else {
       const diff = await getFullDiff(config.baseSHA, config.headSHA)
-      fileDiffs = parseDiff(diff)
+      fileDiffs = require('parse-diff')(diff)
     }
     const structuredDiff = fileDiffs.find(
       diff => diff.from === filename || diff.to === filename
