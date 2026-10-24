@@ -1,4 +1,3 @@
-const path = require('path')
 const { promisify } = require('util')
 const { exec } = require('child_process')
 const { getGitRoot } = require('./getGitRoot')
