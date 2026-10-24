@@ -1,19 +1,20 @@
-const { executeCommand } = require('../utils/exec')
+const { spawnGit } = require('../utils/exec')
+const { validateRef } = require('../utils/validateRef')
 
+/**
+ * Lists the local and remote branches that contain a commit
+ * @param {string} sha - Commit SHA or ref
+ * @param {Object} [options] - Options
+ * @param {string} [options.cwd] - Working directory (defaults to process.cwd())
+ * @returns {Promise<string[]>} Branch names as `git branch -a` prints them (current branch prefixed with `* `)
+ */
 // https://stackoverflow.com/questions/2706797/finding-what-branch-a-git-commit-came-from
-function getCommitBranch(sha) {
-  const command = `git branch -a --contains ${sha}`
-  return new Promise((resolve, reject) => {
-    executeCommand(command, (err, res) => {
-      if (err) return reject(err)
-      if (res) {
-        const answer = res.split('\n').map((line) => {
-          return line.trim()
-        }).filter(Boolean)
-        console.log(answer)
-      }
-    })
-  })
+async function getCommitBranch(sha, options) {
+  validateRef(sha, 'SHA')
+  const res = await spawnGit(['branch', '-a', '--contains', sha], options && options.cwd)
+  return res.split('\n').map((line) => {
+    return line.trim()
+  }).filter(Boolean)
 }
 
 /*

@@ -1,5 +1,5 @@
 const { getCommit } = require('./getCommit')
-const { spawn } = require('child_process')
+const { spawnGit } = require('../utils/exec')
 
 /**
  * @typedef {import('../../types').CommitInfo} CommitInfo
@@ -16,23 +16,12 @@ const { spawn } = require('child_process')
  * const hash = await getFirstCommitHash()
  * // Returns: 'a1b2c3d4e5f6...' (40-character SHA-1 hash)
  */
-function getFirstCommitHash(options) {
-  return new Promise((resolve, reject) => {
-    // git rev-list --max-parents=0 HEAD
-    let stdout = ''
-    const args = ['rev-list', '--max-parents=0', 'HEAD', '--reverse']
-    const cwd = (options && options.cwd) || process.cwd()
-    const child = spawn('git', args, { env: process.env, cwd })
-    child.stdout.on('data', chunk => {
-      stdout += chunk
-    })
-    child.stderr.on('data', data => reject(data.toString()))
-    child.on('close', function(code) {
-      if (code === 0) {
-        resolve(stdout.trim())
-      }
-    })
-  })
+async function getFirstCommitHash(options) {
+  // git rev-list --max-parents=0 HEAD
+  const args = ['rev-list', '--max-parents=0', 'HEAD', '--reverse']
+  const stdout = await spawnGit(args, options && options.cwd)
+  // A repo with several root commits (merged histories) lists one per line: take the first
+  return stdout.trim().split('\n')[0]
 }
 
 /**
