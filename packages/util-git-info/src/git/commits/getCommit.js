@@ -1,7 +1,8 @@
 const { executeCommand } = require('../utils/exec')
 const { parse, getPrettyFormat } = require('./utils/pretty-format')
 
-const HASH_REGEX = /\b[0-9a-f]{5,40}\b/
+// Anchored: the hash goes into a shell command, so it must be nothing but hex
+const HASH_REGEX = /^[0-9a-f]{5,40}$/
 
 /**
  * @typedef {import('../../types').CommitInfo} CommitInfo
