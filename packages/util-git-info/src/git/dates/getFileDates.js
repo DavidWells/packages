@@ -25,38 +25,15 @@ const { validateFilePath } = require('../utils/validateFilePath')
  * console.log('Last modified:', new Date(modifiedDate * 1000))
  */
 async function getFileModifiedTimeStamp(filePath, options = {}) {
-  const cwd = options.cwd || process.cwd()
+  // Get most recent commit timestamp for the file
+  const [timestamp] = await readTimestamps(filePath, options, '-1 --pretty=format:%at --follow', 'modified date')
 
-  return new Promise((resolve, reject) => {
-    // Validate file path to prevent command injection
-    try {
-      validateFilePath(filePath)
-    } catch (err) {
-      return reject(err)
-    }
+  const unixTimestamp = parseInt(timestamp, 10)
+  if (isNaN(unixTimestamp)) {
+    throw new Error(`Invalid timestamp received for ${filePath}`)
+  }
 
-    // Get most recent commit timestamp for the file
-    const command = `git log -1 --pretty=format:%at --follow -- "${filePath}"`
-
-    executeCommand(command, { dst: cwd }, (err, stdout) => {
-      if (err) {
-        return reject(new Error(`Failed to get modified date for ${filePath}: ${err.message}`))
-      }
-
-      const timestamp = stdout.trim()
-      if (!timestamp || timestamp === '') {
-        // File might not be committed yet
-        return reject(new Error(`No git history found for ${filePath}`))
-      }
-
-      const unixTimestamp = parseInt(timestamp, 10)
-      if (isNaN(unixTimestamp)) {
-        return reject(new Error(`Invalid timestamp received for ${filePath}`))
-      }
-
-      resolve(unixTimestamp)
-    })
-  })
+  return unixTimestamp
 }
 
 /**
@@ -70,6 +47,28 @@ async function getFileModifiedTimeStamp(filePath, options = {}) {
  * console.log('Created:', new Date(createdDate * 1000))
  */
 async function getFileCreatedTimeStamp(filePath, options = {}) {
+  // Get all commit timestamps following history, then take the last one (oldest)
+  const timestamps = await readTimestamps(filePath, options, '--follow --pretty=format:%at', 'created date')
+
+  const unixTimestamp = parseInt(timestamps[timestamps.length - 1], 10)
+  if (isNaN(unixTimestamp)) {
+    throw new Error(`Invalid timestamp received for ${filePath}`)
+  }
+
+  return unixTimestamp
+}
+
+/**
+ * Validates `filePath`, runs `git log <logArgs> -- "<filePath>"` and resolves the
+ * non-empty output lines (newest first) (internal helper)
+ * @param {string} filePath - Path to the file
+ * @param {Object} options - Options
+ * @param {string} [options.cwd] - Current working directory (defaults to process.cwd())
+ * @param {string} logArgs - git log arguments before `--`
+ * @param {string} what - What is being read, for the error message
+ * @returns {Promise<string[]>}
+ */
+function readTimestamps(filePath, options, logArgs, what) {
   const cwd = options.cwd || process.cwd()
 
   return new Promise((resolve, reject) => {
@@ -80,28 +79,20 @@ async function getFileCreatedTimeStamp(filePath, options = {}) {
       return reject(err)
     }
 
-    // Get all commit timestamps following history, then take the last one (oldest)
-    const command = `git log --follow --pretty=format:%at -- "${filePath}"`
+    const command = `git log ${logArgs} -- "${filePath}"`
 
     executeCommand(command, { dst: cwd }, (err, stdout) => {
       if (err) {
-        return reject(new Error(`Failed to get created date for ${filePath}: ${err.message}`))
+        return reject(new Error(`Failed to get ${what} for ${filePath}: ${err.message}`))
       }
 
       const timestamps = stdout.trim().split('\n').filter(Boolean)
       if (timestamps.length === 0) {
+        // File might not be committed yet
         return reject(new Error(`No git history found for ${filePath}`))
       }
 
-      // Last timestamp in the log is the oldest (creation)
-      const createdTimestamp = timestamps[timestamps.length - 1]
-      const unixTimestamp = parseInt(createdTimestamp, 10)
-
-      if (isNaN(unixTimestamp)) {
-        return reject(new Error(`Invalid timestamp received for ${filePath}`))
-      }
-
-      resolve(unixTimestamp)
+      resolve(timestamps)
     })
   })
 }
@@ -114,45 +105,23 @@ async function getFileCreatedTimeStamp(filePath, options = {}) {
  * @returns {Promise<FileDateInfo>}
  */
 async function getSingleFileDates(filePath, options = {}) {
-  const cwd = options.cwd || process.cwd()
+  // Get all commit timestamps following history
+  const timestamps = await readTimestamps(filePath, options, '--follow --pretty=format:%at', 'dates')
 
-  return new Promise((resolve, reject) => {
-    // Validate file path to prevent command injection
-    try {
-      validateFilePath(filePath)
-    } catch (err) {
-      return reject(err)
-    }
+  // First timestamp is most recent (modified), last is oldest (created)
+  const modifiedTimestamp = parseInt(timestamps[0], 10)
+  const createdTimestamp = parseInt(timestamps[timestamps.length - 1], 10)
 
-    // Get all commit timestamps following history
-    const command = `git log --follow --pretty=format:%at -- "${filePath}"`
+  if (isNaN(modifiedTimestamp) || isNaN(createdTimestamp)) {
+    throw new Error(`Invalid timestamp received for ${filePath}`)
+  }
 
-    executeCommand(command, { dst: cwd }, (err, stdout) => {
-      if (err) {
-        return reject(new Error(`Failed to get dates for ${filePath}: ${err.message}`))
-      }
-
-      const timestamps = stdout.trim().split('\n').filter(Boolean)
-      if (timestamps.length === 0) {
-        return reject(new Error(`No git history found for ${filePath}`))
-      }
-
-      // First timestamp is most recent (modified), last is oldest (created)
-      const modifiedTimestamp = parseInt(timestamps[0], 10)
-      const createdTimestamp = parseInt(timestamps[timestamps.length - 1], 10)
-
-      if (isNaN(modifiedTimestamp) || isNaN(createdTimestamp)) {
-        return reject(new Error(`Invalid timestamp received for ${filePath}`))
-      }
-
-      resolve({
-        created: createdTimestamp,
-        modified: modifiedTimestamp,
-        createdDate: new Date(createdTimestamp * 1000),
-        modifiedDate: new Date(modifiedTimestamp * 1000)
-      })
-    })
-  })
+  return {
+    created: createdTimestamp,
+    modified: modifiedTimestamp,
+    createdDate: new Date(createdTimestamp * 1000),
+    modifiedDate: new Date(modifiedTimestamp * 1000)
+  }
 }
 
 /**
