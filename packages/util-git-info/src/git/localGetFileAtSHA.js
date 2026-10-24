@@ -1,6 +1,7 @@
 // Gets file contents at a specific git SHA
 const { debug } = require('../debug')
-const { exec } = require('child_process')
+const { execFile } = require('child_process')
+const { validateRef } = require('./utils/validateRef')
 
 const d = debug('localGetFileAtSHA')
 
@@ -17,9 +18,11 @@ const localGetFileAtSHA = (path, _repo, sha, options = {}) => {
   const cwd = options.cwd || process.cwd()
   /** @type {Promise<string|undefined>} */
   const promise = new Promise(resolve => {
-    const call = `git show ${sha}:'${path}'`
-    d(call)
-    exec(call, { cwd }, (err, stdout, _stderr) => {
+    validateRef(sha, 'SHA')
+    // No shell: sha and path reach git as one argument, never as shell syntax
+    const args = ['show', `${sha}:${path}`]
+    d('git', args.join(' '))
+    execFile('git', args, { cwd }, (err, stdout, _stderr) => {
       if (err) {
         return resolve(undefined)
       }

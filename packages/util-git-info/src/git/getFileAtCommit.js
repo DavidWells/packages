@@ -1,6 +1,7 @@
 // Returns file contents at a specific git commit
 const { localGetFileAtSHA } = require('./localGetFileAtSHA')
 const { validateFilePath } = require('./utils/validateFilePath')
+const { validateRef } = require('./utils/validateRef')
 
 /**
  * Gets the contents of a file at a specific git commit
@@ -18,9 +19,7 @@ const { validateFilePath } = require('./utils/validateFilePath')
  */
 async function getFileAtCommit(filePath, sha, options = {}) {
   validateFilePath(filePath)
-  if (!sha || typeof sha !== 'string') {
-    throw new Error('SHA must be a non-empty string')
-  }
+  validateRef(sha, 'SHA')
   return localGetFileAtSHA(filePath, null, sha, options)
 }
 

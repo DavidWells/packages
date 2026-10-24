@@ -1,5 +1,6 @@
 const { debug } = require('../debug')
-const { spawn } = require('child_process')
+const { spawnGit } = require('./utils/exec')
+const { validateRef } = require('./utils/validateRef')
 
 const d = debug('localGetNumstat')
 
@@ -12,43 +13,36 @@ const d = debug('localGetNumstat')
  * @param {string} [cwd] - Working directory (defaults to process.cwd())
  * @returns {Promise<number>} Total lines of code changed (additions + deletions)
  */
-const localGetNumstat = (base, head, cwd) => {
-  return new Promise((resolve, reject) => {
-    const args = ['diff', `${base}...${head}`, '--numstat']
-    let stdout = ''
-    const child = spawn('git', args, { env: process.env, cwd: cwd || process.cwd() })
-    d('> git', args.join(' '))
+const localGetNumstat = async (base, head, cwd) => {
+  validateRef(base, 'Base ref')
+  validateRef(head, 'Head ref')
+  const args = ['diff', `${base}...${head}`, '--numstat']
+  d('> git', args.join(' '))
 
-    child.stdout.on('data', chunk => {
-      stdout += chunk
-    })
+  let stdout
+  try {
+    stdout = await spawnGit(args, cwd)
+  } catch (err) {
+    console.error(`Could not get numstat from git between ${base} and ${head}`)
+    console.error(`Please double check "${base}" is a valid ref`)
+    throw err
+  }
 
-    child.stderr.on('data', data => {
-      console.error(`Could not get numstat from git between ${base} and ${head}`)
-      console.error(`Please double check "${base}" is a valid ref`)
-      reject(data.toString())
-    })
+  // Parse numstat output: "additions deletions filename" per line
+  // Sum all additions and deletions
+  let total = 0
+  const lines = stdout.trim().split('\n')
 
-    child.on('close', function(code) {
-      if (code === 0) {
-        // Parse numstat output: "additions deletions filename" per line
-        // Sum all additions and deletions
-        let total = 0
-        const lines = stdout.trim().split('\n')
+  for (const line of lines) {
+    if (!line) continue
 
-        for (const line of lines) {
-          if (!line) continue
+    const parts = line.split(/\s+/)
+    const additions = parseInt(parts[0], 10) || 0
+    const deletions = parseInt(parts[1], 10) || 0
+    total += additions + deletions
+  }
 
-          const parts = line.split(/\s+/)
-          const additions = parseInt(parts[0], 10) || 0
-          const deletions = parseInt(parts[1], 10) || 0
-          total += additions + deletions
-        }
-
-        resolve(total)
-      }
-    })
-  })
+  return total
 }
 
 module.exports.localGetNumstat = localGetNumstat
