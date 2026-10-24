@@ -1,6 +1,4 @@
 const { executeCommand } = require('../utils/exec')
-const path = require('path')
-const { getGitRoot } = require('../getGitRoot')
 const { validateFilePath } = require('../utils/validateFilePath')
 
 /**
